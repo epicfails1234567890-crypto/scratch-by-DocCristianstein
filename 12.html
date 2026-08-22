@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch-like Console con Repetir y Arrastrar</title>
+    <style>
+        :root {
+            --scratch-blue: #4C97FF;
+            --scratch-green: #59C059;
+            --scratch-orange: #FF8C1A;
+            --scratch-yellow: #FFBF00;
+            --scratch-purple: #9966FF;
+            --scratch-red: #FF6680;
+            --scratch-cyan: #00C8C8;
+            --block-radius: 12px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        #app {
+            width: 850px;
+            max-width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        #toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 20px;
+            background: #fafafa;
+            border-bottom: 1px solid #ddd;
+            flex-wrap: wrap;
+        }
+        #greenFlag {
+            background: var(--scratch-green);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 #2e7d32;
+            transition: all 0.1s;
+            color: white;
+            user-select: none;
+        }
+        #greenFlag:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #2e7d32;
+        }
+        .palette-btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+            transition: all 0.1s;
+        }
+        .palette-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.2);
+        }
+        #btnSay { background: var(--scratch-purple); }
+        #btnAssign { background: var(--scratch-orange); }
+        #btnRepeat { background: var(--scratch-cyan); }
+        #btnClear {
+            background: #999;
+            margin-left: auto;
+        }
+        #btnSave { background: var(--scratch-blue); }
+        #btnLoad { background: var(--scratch-yellow); }
+        #programArea {
+            padding: 20px;
+            background: #fff;
+            min-height: 200px;
+        }
+        .block {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--scratch-blue);
+            color: white;
+            padding: 10px 15px;
+            border-radius: var(--block-radius);
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+            font-size: 16px;
+            flex-wrap: wrap;
+            cursor: grab;
+            transition: opacity 0.2s;
+        }
+        .block:active {
+            cursor: grabbing;
+        }
+        .block-assign { background: var(--scratch-orange); }
+        .block-repeat {
+            background: var(--scratch-cyan);
+            flex-direction: column;
+            align-items: stretch;
+            padding: 10px;
+            border-radius: var(--block-radius);
+        }
+        .block-repeat .repeat-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            cursor: grab;
+        }
+        .block-repeat .repeat-body {
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 5px;
+            min-height: 40px;
+        }
+        .block-repeat .repeat-body .nested-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .block-repeat .repeat-body .block {
+            margin-bottom: 0;
+        }
+        .block-label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .block input[type="text"] {
+            border: none;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 15px;
+            width: auto;
+            min-width: 150px;
+            outline: none;
+        }
+        .block button {
+            background: rgba(255,255,255,0.3);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .block button:hover {
+            background: rgba(255,255,255,0.5);
+        }
+        .block-repeat .repeat-body button {
+            background: rgba(255,255,255,0.4);
+        }
+        .block-repeat .repeat-body button:hover {
+            background: rgba(255,255,255,0.6);
+        }
+        .block-repeat .add-inside {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        #outputArea {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            min-height: 150px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-y: auto;
+            max-height: 250px;
+        }
+        .output-msg {
+            margin: 3px 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .output-msg::before {
+            content: "> ";
+            color: #6a9955;
+        }
+        .empty-hint {
+            color: #666;
+            font-style: italic;
+        }
+        .drop-zone-highlight {
+            outline: 2px dashed #4CAF50;
+            outline-offset: 2px;
+        }
+        @media (max-width: 600px) {
+            .block input[type="text"] {
+                width: 100%;
+                min-width: auto;
+            }
+            .block {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .block button {
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Barra de herramientas -->
+        <div id="toolbar">
+            <button id="greenFlag" title="Ejecutar programa" onclick="runProgram()">🏳️</button>
+            <button class="palette-btn" id="btnSay" onclick="addBlockToParent('say', [])">➕ Decir</button>
+            <button class="palette-btn" id="btnAssign" onclick="addBlockToParent('assign', [])">➕ Asignar</button>
+            <button class="palette-btn" id="btnRepeat" onclick="addBlockToParent('repeat', [])">➕ Repetir</button>
+            <button class="palette-btn" id="btnSave" onclick="saveProgram()">💾 Guardar</button>
+            <button class="palette-btn" id="btnLoad" onclick="document.getElementById('loadFileInput').click()">📂 Cargar</button>
+            <input type="file" id="loadFileInput" accept=".json" style="display:none" onchange="loadProgram(event)">
+            <button class="palette-btn" id="btnClear" onclick="clearOutput()">🧹 Limpiar consola</button>
+        </div>
+
+        <!-- Área de bloques -->
+        <div id="programArea">
+            <div id="programList"></div>
+            <p class="empty-hint" id="emptyHint" style="display:none;">No hay bloques. Añade algunos desde la paleta o arrastra aquí.</p>
+        </div>
+
+        <!-- Consola visual -->
+        <div id="outputArea">
+            <div class="output-msg">Consola lista. Pulsa la bandera verde para ejecutar.</div>
+        </div>
+    </div>
+
+    <script>
+        // ================== ESTADO ==================
+        let blocks = [];
+        let variables = {};
+        let dragSourcePath = null;
+
+        // ================== FUNCIONES AUXILIARES ==================
+        function getBlockByPath(path) {
+            let current = blocks;
+            for (let i = 0; i < path.length; i++) {
+                if (i === path.length - 1) {
+                    return current[path[i]];
+                } else {
+                    if (!current[path[i]] || !current[path[i]].children) return null;
+                    current = current[path[i]].children;
+                }
+            }
+            return null;
+        }
+
+        function getParentList(path) {
+            if (path.length === 0) return blocks;
+            let parent = blocks;
+            for (let i = 0; i < path.length - 1; i++) {
+                parent = parent[path[i]].children;
+            }
+            return parent;
+        }
+
+        function updateBlockByPath(path, key, value) {
+            const block = getBlockByPath(path);
+            if (block) {
+                block[key] = value;
+            }
+        }
+
+        function deleteBlockByPath(path) {
+            if (path.length === 0) return;
+            const parentList = getParentList(path);
+            const index = path[path.length - 1];
+            parentList.splice(index, 1);
+            renderProgram();
+        }
+
+        function moveBlockByPath(path, direction) {
+            if (path.length === 0) return;
+            const parentList = getParentList(path);
+            const index = path[path.length - 1];
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= parentList.length) return;
+            [parentList[index], parentList[newIndex]] = [parentList[newIndex], parentList[index]];
+            renderProgram();
+        }
+
+        // Añade un bloque a la lista raíz (parentPath = [])
+        function addBlockToParent(type, parentPath) {
+            const newBlock = createBlock(type);
+            const parentList = getParentList(parentPath);
+            parentList.push(newBlock);
+            renderProgram();
+        }
+
+        // Añade un bloque dentro de un repetir (repeatPath es la ruta del bloque repetir)
+        function addBlockToRepeat(repeatPath, type) {
+            const repeatBlock = getBlockByPath(repeatPath);
+            if (repeatBlock && repeatBlock.type === 'repeat') {
+                const newBlock = createBlock(type);
+                repeatBlock.children.push(newBlock);
+                renderProgram();
+            }
+        }
+
+        function createBlock(type) {
+            if (type === 'say') {
+                return { type: 'say', text: '"hola mundo"' };
+            } else if (type === 'assign') {
+                return { type: 'assign', varName: 'veces', value: '1' };
+            } else if (type === 'repeat') {
+                return { type: 'repeat', times: '10', children: [] };
+            }
+            return null;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ================== RENDERIZADO ==================
+        function renderProgram() {
+            const list = document.getElementById('programList');
+            const emptyHint = document.getElementById('emptyHint');
+            list.innerHTML = '';
+
+            list.dataset.listPath = '';
+            list.ondragover = handleDragOverList;
+            list.ondrop = handleDropOnList;
+            list.classList.remove('drop-zone-highlight');
+
+            if (blocks.length === 0) {
+                emptyHint.style.display = 'block';
+                return;
+            } else {
+                emptyHint.style.display = 'none';
+            }
+
+            renderBlockList(list, blocks, []);
+        }
+
+        function renderBlockList(container, blockList, parentPath) {
+            blockList.forEach((block, index) => {
+                const currentPath = parentPath.concat(index);
+                const div = document.createElement('div');
+                div.className = `block ${block.type === 'assign' ? 'block-assign' : ''} ${block.type === 'repeat' ? 'block-repeat' : ''}`;
+                div.draggable = true;
+                div.dataset.path = currentPath.join(',');
+                div.addEventListener('dragstart', handleDragStart);
+                div.addEventListener('dragover', handleDragOverBlock);
+                div.addEventListener('drop', handleDropOnBlock);
+                div.addEventListener('dragend', handleDragEnd);
+
+                if (block.type === 'say') {
+                    div.innerHTML = `
+                        <span class="block-label">💬 decir</span>
+                        <input type="text" value="${escapeHtml(block.text)}" 
+                               placeholder="Expresión JS (ej: 'hola ' + nombre)"
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'text', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'assign') {
+                    div.innerHTML = `
+                        <span class="block-label">📦 asignar</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" 
+                               placeholder="Variable" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>=</span>
+                        <input type="text" value="${escapeHtml(block.value)}" 
+                               placeholder="Expresión JS" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'value', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'repeat') {
+                    div.innerHTML = `
+                        <div class="repeat-header">
+                            <span class="block-label">🔁 repetir</span>
+                            <input type="text" value="${escapeHtml(block.times)}" 
+                                   placeholder="Número o expresión JS" 
+                                   onchange="updateBlockByPath([${currentPath.join(',')}], 'times', this.value)">
+                            <span>veces</span>
+                            <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                            <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                            <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                        </div>
+                        <div class="repeat-body">
+                            <div class="nested-list" data-list-path="${currentPath.join(',')}"></div>
+                            <div class="add-inside">
+                                <button onclick="addBlockToRepeat([${currentPath.join(',')}], 'say')">➕ Decir</button>
+                                <button onclick="addBlockToRepeat([${currentPath.join(',')}], 'assign')">➕ Asignar</button>
+                                <button onclick="addBlockToRepeat([${currentPath.join(',')}], 'repeat')">➕ Repetir</button>
+                            </div>
+                        </div>
+                    `;
+                    const nestedList = div.querySelector('.nested-list');
+                    nestedList.ondragover = handleDragOverList;
+                    nestedList.ondrop = handleDropOnList;
+                    renderBlockList(nestedList, block.children || [], currentPath);
+                }
+                container.appendChild(div);
+            });
+        }
+
+        // ================== DRAG & DROP ==================
+        function handleDragStart(event) {
+            dragSourcePath = event.currentTarget.dataset.path.split(',').filter(s => s !== '').map(Number);
+            event.dataTransfer.setData('text/plain', event.currentTarget.dataset.path);
+            event.dataTransfer.effectAllowed = 'move';
+            event.currentTarget.style.opacity = '0.5';
+        }
+
+        function handleDragEnd(event) {
+            event.currentTarget.style.opacity = '1';
+            document.querySelectorAll('.drop-zone-highlight').forEach(el => el.classList.remove('drop-zone-highlight'));
+            dragSourcePath = null;
+        }
+
+        function handleDragOverBlock(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.classList.add('drop-zone-highlight');
+        }
+
+        function handleDropOnBlock(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const targetPath = event.currentTarget.dataset.path.split(',').filter(s => s !== '').map(Number);
+            if (dragSourcePath) {
+                moveBlockBefore(dragSourcePath, targetPath);
+            }
+            event.currentTarget.classList.remove('drop-zone-highlight');
+        }
+
+        function handleDragOverList(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.classList.add('drop-zone-highlight');
+        }
+
+        function handleDropOnList(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const listPath = event.currentTarget.dataset.listPath || '';
+            const targetParentPath = listPath === '' ? [] : listPath.split(',').map(Number);
+            if (dragSourcePath) {
+                moveBlockToEnd(dragSourcePath, targetParentPath);
+            }
+            event.currentTarget.classList.remove('drop-zone-highlight');
+        }
+
+        function moveBlockBefore(sourcePath, targetPath) {
+            if (isDescendant(targetPath, sourcePath)) return;
+            const sourceBlock = getBlockByPath(sourcePath);
+            if (!sourceBlock) return;
+            const sourceParentList = getParentList(sourcePath);
+            const sourceIndex = sourcePath[sourcePath.length - 1];
+            sourceParentList.splice(sourceIndex, 1);
+            const targetParentList = getParentList(targetPath);
+            const targetIndex = targetPath[targetPath.length - 1];
+            targetParentList.splice(targetIndex, 0, sourceBlock);
+            renderProgram();
+        }
+
+        function moveBlockToEnd(sourcePath, targetParentPath) {
+            if (isDescendant(targetParentPath, sourcePath)) return;
+            const sourceBlock = getBlockByPath(sourcePath);
+            if (!sourceBlock) return;
+            const sourceParentList = getParentList(sourcePath);
+            const sourceIndex = sourcePath[sourcePath.length - 1];
+            sourceParentList.splice(sourceIndex, 1);
+            let targetListRef;
+            if (targetParentPath.length === 0) {
+                targetListRef = blocks;
+            } else {
+                const parentBlock = getBlockByPath(targetParentPath);
+                targetListRef = parentBlock.children;
+            }
+            targetListRef.push(sourceBlock);
+            renderProgram();
+        }
+
+        function isDescendant(candidatePath, ancestorPath) {
+            if (ancestorPath.length === 0) return false;
+            if (candidatePath.length <= ancestorPath.length) return false;
+            for (let i = 0; i < ancestorPath.length; i++) {
+                if (candidatePath[i] !== ancestorPath[i]) return false;
+            }
+            return true;
+        }
+
+        // ================== EVALUACIÓN DE EXPRESIONES ==================
+        function evalExpression(expr, vars) {
+            try {
+                const keys = Object.keys(vars);
+                const values = Object.values(vars);
+                const func = new Function(...keys, `"use strict"; return (${expr});`);
+                return func(...values);
+            } catch (e) {
+                return expr;
+            }
+        }
+
+        // ================== EJECUCIÓN ==================
+        function runProgram() {
+            variables = {};
+            const outputDiv = document.getElementById('outputArea');
+            outputDiv.innerHTML = '';
+            if (blocks.length === 0) {
+                outputDiv.innerHTML = '<div class="output-msg">No hay bloques para ejecutar.</div>';
+                return;
+            }
+            executeBlockList(blocks, outputDiv);
+        }
+
+        function executeBlockList(blockList, outputDiv) {
+            blockList.forEach((block) => {
+                try {
+                    if (block.type === 'assign') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable vacío');
+                        const value = evalExpression(block.value, variables);
+                        variables[varName] = value;
+                    } else if (block.type === 'say') {
+                        const message = evalExpression(block.text, variables);
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = 'output-msg';
+                        msgDiv.textContent = String(message);
+                        outputDiv.appendChild(msgDiv);
+                        console.log(message);
+                    } else if (block.type === 'repeat') {
+                        const times = evalExpression(block.times, variables);
+                        const num = Number(times);
+                        if (isNaN(num)) throw new Error('Número de repeticiones no válido');
+                        if (num > 10000) throw new Error('Demasiadas repeticiones (máx. 10000)');
+                        for (let i = 0; i < num; i++) {
+                            executeBlockList(block.children || [], outputDiv);
+                        }
+                    }
+                } catch (err) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'output-msg';
+                    errorDiv.textContent = `⚠️ Error: ${err.message}`;
+                    outputDiv.appendChild(errorDiv);
+                    console.error('Error:', err);
+                }
+            });
+        }
+
+        function clearOutput() {
+            document.getElementById('outputArea').innerHTML = '';
+            console.clear();
+        }
+
+        // ================== GUARDAR Y CARGAR ==================
+        function saveProgram() {
+            const data = JSON.stringify(blocks, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'programa_scratch.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadProgram(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (Array.isArray(data) && validateBlocks(data)) {
+                        blocks = data;
+                        renderProgram();
+                        clearOutput();
+                        alert('Programa cargado correctamente.');
+                    } else {
+                        alert('Formato de archivo no válido. Debe ser un array de bloques con estructura válida.');
+                    }
+                } catch (err) {
+                    alert('Error al leer el archivo: ' + err.message);
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function validateBlocks(blockList) {
+            if (!Array.isArray(blockList)) return false;
+            return blockList.every(b => {
+                if (b.type === 'say') {
+                    return typeof b.text === 'string';
+                } else if (b.type === 'assign') {
+                    return typeof b.varName === 'string' && typeof b.value === 'string';
+                } else if (b.type === 'repeat') {
+                    return typeof b.times === 'string' && validateBlocks(b.children);
+                }
+                return false;
+            });
+        }
+
+        // ================== INICIALIZACIÓN ==================
+        addBlockToParent('assign', []);
+        const sayBlock = createBlock('say');
+        sayBlock.text = "'ya te dije hola ' + veces + '.'";
+        blocks.push(sayBlock);
+        const repeatBlock = createBlock('repeat');
+        repeatBlock.times = '3';
+        const childSay = createBlock('say');
+        childSay.text = "'Estoy dentro del repetir'";
+        repeatBlock.children.push(childSay);
+        blocks.push(repeatBlock);
+        renderProgram();
+    </script>
+</body>
+</html>
