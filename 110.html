@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch-like Console con Preguntar, Arrays, Funciones y Siempre</title>
+    <style>
+        :root {
+            --scratch-blue: #4C97FF;
+            --scratch-green: #59C059;
+            --scratch-orange: #FF8C1A;
+            --scratch-yellow: #FFBF00;
+            --scratch-purple: #9966FF;
+            --scratch-red: #FF6680;
+            --scratch-cyan: #00C8C8;
+            --scratch-ask: #CF63CF;
+            --scratch-list: #FFA500; /* naranja para listas */
+            --scratch-function: #5CB1D6; /* azul claro para funciones */
+            --scratch-forever: #D94F70; /* rojo oscuro para siempre */
+            --block-radius: 12px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        #app {
+            width: 850px;
+            max-width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        #toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 20px;
+            background: #fafafa;
+            border-bottom: 1px solid #ddd;
+            flex-wrap: wrap;
+        }
+        #greenFlag {
+            background: var(--scratch-green);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 #2e7d32;
+            transition: all 0.1s;
+            color: white;
+            user-select: none;
+        }
+        #greenFlag:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #2e7d32;
+        }
+        .palette-btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+            transition: all 0.1s;
+        }
+        .palette-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.2);
+        }
+        #btnSay { background: var(--scratch-purple); }
+        #btnAssign { background: var(--scratch-orange); }
+        #btnRepeat { background: var(--scratch-cyan); }
+        #btnWhile { background: var(--scratch-red); }
+        #btnIf { background: var(--scratch-yellow); }
+        #btnAsk { background: var(--scratch-ask); }
+        #btnListCreate { background: var(--scratch-list); }
+        #btnListAdd { background: var(--scratch-list); }
+        #btnListGet { background: var(--scratch-list); }
+        #btnListLength { background: var(--scratch-list); }
+        #btnFunctionDef { background: var(--scratch-function); }
+        #btnFunctionCall { background: var(--scratch-function); }
+        #btnForever { background: var(--scratch-forever); }
+        #btnClear { background: #999; margin-left: auto; }
+        #btnSave { background: var(--scratch-blue); }
+        #btnLoad { background: var(--scratch-yellow); }
+        #programArea {
+            padding: 20px;
+            background: #fff;
+            min-height: 200px;
+        }
+        .block {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--scratch-blue);
+            color: white;
+            padding: 10px 15px;
+            border-radius: var(--block-radius);
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+            font-size: 16px;
+            flex-wrap: wrap;
+            cursor: grab;
+            transition: opacity 0.2s;
+        }
+        .block:active { cursor: grabbing; }
+        .block-assign { background: var(--scratch-orange); }
+        .block-repeat { background: var(--scratch-cyan); flex-direction: column; align-items: stretch; padding: 10px; }
+        .block-while { background: var(--scratch-red); flex-direction: column; align-items: stretch; padding: 10px; }
+        .block-if { background: var(--scratch-yellow); flex-direction: column; align-items: stretch; padding: 10px; }
+        .block-forever { background: var(--scratch-forever); flex-direction: column; align-items: stretch; padding: 10px; }
+        .block-ask { background: var(--scratch-ask); }
+        .block-list { background: var(--scratch-list); }
+        .block-function { background: var(--scratch-function); flex-direction: column; align-items: stretch; padding: 10px; }
+        .block-repeat .repeat-header,
+        .block-while .while-header,
+        .block-if .if-header,
+        .block-forever .forever-header,
+        .block-function .function-header,
+        .block-ask .ask-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            cursor: grab;
+        }
+        .block-repeat .repeat-body,
+        .block-while .while-body,
+        .block-if .if-body,
+        .block-forever .forever-body,
+        .block-function .function-body {
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 5px;
+            min-height: 40px;
+        }
+        .block-repeat .repeat-body .nested-list,
+        .block-while .while-body .nested-list,
+        .block-if .if-body .nested-list,
+        .block-forever .forever-body .nested-list,
+        .block-function .function-body .nested-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .block-repeat .repeat-body .block,
+        .block-while .while-body .block,
+        .block-if .if-body .block,
+        .block-forever .forever-body .block,
+        .block-function .function-body .block {
+            margin-bottom: 0;
+        }
+        .block-label { font-weight: bold; margin-right: 5px; }
+        .block input[type="text"] {
+            border: none;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 15px;
+            width: auto;
+            min-width: 150px;
+            outline: none;
+        }
+        .block button {
+            background: rgba(255,255,255,0.3);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .block button:hover { background: rgba(255,255,255,0.5); }
+        .block-repeat .repeat-body button,
+        .block-while .while-body button,
+        .block-if .if-body button,
+        .block-forever .forever-body button,
+        .block-function .function-body button { background: rgba(255,255,255,0.4); }
+        .block-repeat .repeat-body button:hover,
+        .block-while .while-body button:hover,
+        .block-if .if-body button:hover,
+        .block-forever .forever-body button:hover,
+        .block-function .function-body button:hover { background: rgba(255,255,255,0.6); }
+        .block-repeat .add-inside,
+        .block-while .add-inside,
+        .block-if .add-inside,
+        .block-forever .add-inside,
+        .block-function .add-inside { display: flex; gap: 5px; margin-top: 5px; }
+        #outputArea {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            min-height: 150px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-y: auto;
+            max-height: 250px;
+        }
+        .output-msg {
+            margin: 3px 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .output-msg::before {
+            content: "> ";
+            color: #6a9955;
+        }
+        .output-input-line {
+            display: flex;
+            align-items: center;
+            margin: 3px 0;
+        }
+        .output-input-line::before {
+            content: "> ";
+            color: #6a9955;
+        }
+        .output-input-line input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px dashed #999;
+            color: white;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+            flex: 1;
+            margin-left: 0;
+        }
+        .empty-hint { color: #666; font-style: italic; }
+        .drop-zone-highlight { outline: 2px dashed #4CAF50; outline-offset: 2px; }
+        @media (max-width: 600px) {
+            .block input[type="text"] { width: 100%; min-width: auto; }
+            .block { flex-direction: column; align-items: stretch; }
+            .block button { align-self: flex-end; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app"style="width:100%">
+        <div id="toolbar">
+            <button id="greenFlag" title="Ejecutar programa" onclick="runProgram()">🏳️</button>
+            <button class="palette-btn" id="btnSay" onclick="addBlockToParent('say', [])">➕ Decir</button>
+            <button class="palette-btn" id="btnAssign" onclick="addBlockToParent('assign', [])">➕ Asignar</button>
+            <button class="palette-btn" id="btnRepeat" onclick="addBlockToParent('repeat', [])">➕ Repetir</button>
+            <button class="palette-btn" id="btnWhile" onclick="addBlockToParent('while', [])">➕ Mientras</button>
+            <button class="palette-btn" id="btnIf" onclick="addBlockToParent('if', [])">➕ Si</button>
+            <button class="palette-btn" id="btnAsk" onclick="addBlockToParent('ask', [])">➕ Preguntar</button>
+            <button class="palette-btn" id="btnListCreate" onclick="addBlockToParent('listCreate', [])">➕ Crear lista</button>
+            <button class="palette-btn" id="btnListAdd" onclick="addBlockToParent('listAdd', [])">➕ Añadir a lista</button>
+            <button class="palette-btn" id="btnListGet" onclick="addBlockToParent('listGet', [])">➕ Obtener de lista</button>
+            <button class="palette-btn" id="btnListLength" onclick="addBlockToParent('listLength', [])">➕ Longitud de lista</button>
+            <button class="palette-btn" id="btnFunctionDef" onclick="addBlockToParent('functionDef', [])">➕ Función</button>
+            <button class="palette-btn" id="btnFunctionCall" onclick="addBlockToParent('functionCall', [])">➕ Llamar función</button>
+            <button class="palette-btn" id="btnForever" onclick="addBlockToParent('forever', [])">➕ Siempre</button>
+            <button class="palette-btn" id="btnSave" onclick="saveProgram()">💾 Guardar</button>
+            <button class="palette-btn" id="btnLoad" onclick="document.getElementById('loadFileInput').click()">📂 Cargar</button>
+            <input type="file" id="loadFileInput" accept=".json" style="display:none" onchange="loadProgram(event)">
+            <button class="palette-btn" id="btnClear" onclick="clearOutput()">🧹 Limpiar consola</button>
+        </div>
+
+        <div id="programArea">
+            <div id="programList"></div>
+            <p class="empty-hint" id="emptyHint" style="display:none;">No hay bloques. Añade algunos desde la paleta o arrastra aquí.</p>
+        </div>
+
+        <div id="outputArea">
+            <div class="output-msg">Consola lista. Pulsa la bandera verde para ejecutar.</div>
+        </div>
+    </div>
+
+    <script>
+        // ================== ESTADO ==================
+        let blocks = [];
+        let variables = {};
+        let functions = {};
+        let dragSourcePath = null;
+        let isRunning = false;
+        let callDepth = 0;
+        const MAX_CALL_DEPTH = 50;
+        let activeIntervals = [];
+
+        // ================== FUNCIONES AUXILIARES ==================
+        function getBlockByPath(path) {
+            let current = blocks;
+            for (let i = 0; i < path.length; i++) {
+                if (i === path.length - 1) {
+                    return current[path[i]];
+                } else {
+                    if (!current[path[i]] || !current[path[i]].children) return null;
+                    current = current[path[i]].children;
+                }
+            }
+            return null;
+        }
+
+        function getParentList(path) {
+            if (path.length === 0) return blocks;
+            let parent = blocks;
+            for (let i = 0; i < path.length - 1; i++) {
+                parent = parent[path[i]].children;
+            }
+            return parent;
+        }
+
+        function updateBlockByPath(path, key, value) {
+            const block = getBlockByPath(path);
+            if (block) {
+                block[key] = value;
+            }
+        }
+
+        function deleteBlockByPath(path) {
+            if (path.length === 0) return;
+            const parentList = getParentList(path);
+            const index = path[path.length - 1];
+            parentList.splice(index, 1);
+            renderProgram();
+        }
+
+        function moveBlockByPath(path, direction) {
+            if (path.length === 0) return;
+            const parentList = getParentList(path);
+            const index = path[path.length - 1];
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= parentList.length) return;
+            [parentList[index], parentList[newIndex]] = [parentList[newIndex], parentList[index]];
+            renderProgram();
+        }
+
+        function addBlockToParent(type, parentPath) {
+            const newBlock = createBlock(type);
+            const parentList = getParentList(parentPath);
+            parentList.push(newBlock);
+            renderProgram();
+        }
+
+        function addBlockToContainer(containerPath, type) {
+            const containerBlock = getBlockByPath(containerPath);
+            if (containerBlock && ['repeat', 'while', 'if', 'functionDef', 'forever'].includes(containerBlock.type)) {
+                const newBlock = createBlock(type);
+                containerBlock.children.push(newBlock);
+                renderProgram();
+            }
+        }
+
+        function createBlock(type) {
+            if (type === 'say') {
+                return { type: 'say', text: '"hola mundo"' };
+            } else if (type === 'assign') {
+                return { type: 'assign', varName: 'veces', value: '1' };
+            } else if (type === 'repeat') {
+                return { type: 'repeat', times: '10', children: [] };
+            } else if (type === 'while') {
+                return { type: 'while', condition: 'veces < 3', children: [] };
+            } else if (type === 'if') {
+                return { type: 'if', condition: 'veces === 1', children: [] };
+            } else if (type === 'forever') {
+                return { type: 'forever', children: [] };
+            } else if (type === 'ask') {
+                return { type: 'ask', question: '""', varName: 'nombre' };
+            } else if (type === 'listCreate') {
+                return { type: 'listCreate', varName: 'miLista', value: '[1, 2, 3]' };
+            } else if (type === 'listAdd') {
+                return { type: 'listAdd', varName: 'miLista', value: '4' };
+            } else if (type === 'listGet') {
+                return { type: 'listGet', varName: 'miLista', index: '0', target: 'elemento' };
+            } else if (type === 'listLength') {
+                return { type: 'listLength', varName: 'miLista', target: 'longitud' };
+            } else if (type === 'functionDef') {
+                return { type: 'functionDef', name: 'miFuncion', params: 'a, b', children: [] };
+            } else if (type === 'functionCall') {
+                return { type: 'functionCall', name: 'miFuncion', args: '1, 2' };
+            }
+            return null;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ================== RENDERIZADO ==================
+        function renderProgram() {
+            const list = document.getElementById('programList');
+            const emptyHint = document.getElementById('emptyHint');
+            list.innerHTML = '';
+
+            list.dataset.listPath = '';
+            list.ondragover = handleDragOverList;
+            list.ondrop = handleDropOnList;
+            list.classList.remove('drop-zone-highlight');
+
+            if (blocks.length === 0) {
+                emptyHint.style.display = 'block';
+                return;
+            } else {
+                emptyHint.style.display = 'none';
+            }
+
+            renderBlockList(list, blocks, []);
+        }
+
+        function renderBlockList(container, blockList, parentPath) {
+            blockList.forEach((block, index) => {
+                const currentPath = parentPath.concat(index);
+                const div = document.createElement('div');
+                let classNames = ['block'];
+                if (block.type === 'assign') classNames.push('block-assign');
+                else if (block.type === 'repeat') classNames.push('block-repeat');
+                else if (block.type === 'while') classNames.push('block-while');
+                else if (block.type === 'if') classNames.push('block-if');
+                else if (block.type === 'forever') classNames.push('block-forever');
+                else if (block.type === 'ask') classNames.push('block-ask');
+                else if (['listCreate','listAdd','listGet','listLength'].includes(block.type)) classNames.push('block-list');
+                else if (block.type === 'functionDef') classNames.push('block-function');
+                else if (block.type === 'functionCall') classNames.push('block-function');
+                div.className = classNames.join(' ');
+                div.draggable = true;
+                div.dataset.path = currentPath.join(',');
+                div.addEventListener('dragstart', handleDragStart);
+                div.addEventListener('dragover', handleDragOverBlock);
+                div.addEventListener('drop', handleDropOnBlock);
+                div.addEventListener('dragend', handleDragEnd);
+
+                if (block.type === 'say') {
+                    div.innerHTML = `
+                        <span class="block-label">💬 decir</span>
+                        <input type="text" value="${escapeHtml(block.text)}" placeholder="Expresión JS" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'text', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'assign') {
+                    div.innerHTML = `
+                        <span class="block-label">📦 asignar</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>=</span>
+                        <input type="text" value="${escapeHtml(block.value)}" placeholder="Expresión JS" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'value', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'repeat' || block.type === 'while' || block.type === 'if' || block.type === 'forever' || block.type === 'functionDef') {
+                    let headerHtml = '';
+                    let bodyClass = '';
+                    let addButtonsHtml = '';
+                    const typeName = block.type;
+                    if (typeName === 'repeat') {
+                        headerHtml = `
+                            <div class="repeat-header">
+                                <span class="block-label">🔁 repetir</span>
+                                <input type="text" value="${escapeHtml(block.times)}" placeholder="Número o expresión" 
+                                       onchange="updateBlockByPath([${currentPath.join(',')}], 'times', this.value)">
+                                <span>veces</span>
+                                <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                                <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                                <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                            </div>
+                        `;
+                        bodyClass = 'repeat-body';
+                    } else if (typeName === 'while') {
+                        headerHtml = `
+                            <div class="while-header">
+                                <span class="block-label">🔁 mientras</span>
+                                <input type="text" value="${escapeHtml(block.condition)}" placeholder="Condición JS" 
+                                       onchange="updateBlockByPath([${currentPath.join(',')}], 'condition', this.value)">
+                                <span>hacer</span>
+                                <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                                <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                                <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                            </div>
+                        `;
+                        bodyClass = 'while-body';
+                    } else if (typeName === 'if') {
+                        headerHtml = `
+                            <div class="if-header">
+                                <span class="block-label">🔀 si</span>
+                                <input type="text" value="${escapeHtml(block.condition)}" placeholder="Condición JS" 
+                                       onchange="updateBlockByPath([${currentPath.join(',')}], 'condition', this.value)">
+                                <span>entonces</span>
+                                <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                                <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                                <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                            </div>
+                        `;
+                        bodyClass = 'if-body';
+                    } else if (typeName === 'forever') {
+                        headerHtml = `
+                            <div class="forever-header">
+                                <span class="block-label">🔁 siempre</span>
+                                <span>repetir a 60 FPS</span>
+                                <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                                <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                                <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                            </div>
+                        `;
+                        bodyClass = 'forever-body';
+                    } else if (typeName === 'functionDef') {
+                        headerHtml = `
+                            <div class="function-header">
+                                <span class="block-label">🔧 función</span>
+                                <input type="text" value="${escapeHtml(block.name)}" placeholder="Nombre de función" 
+                                       onchange="updateBlockByPath([${currentPath.join(',')}], 'name', this.value)">
+                                <span>parámetros:</span>
+                                <input type="text" value="${escapeHtml(block.params)}" placeholder="a, b, c" 
+                                       onchange="updateBlockByPath([${currentPath.join(',')}], 'params', this.value)">
+                                <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                                <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                                <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                            </div>
+                        `;
+                        bodyClass = 'function-body';
+                    }
+                    addButtonsHtml = `
+                        <div class="add-inside">
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'say')">➕ Decir</button>
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'assign')">➕ Asignar</button>
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'repeat')">➕ Repetir</button>
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'while')">➕ Mientras</button>
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'if')">➕ Si</button>
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'forever')">➕ Siempre</button>
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'ask')">➕ Preguntar</button>
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'listCreate')">➕ Crear lista</button>
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'listAdd')">➕ Añadir</button>
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'listGet')">➕ Obtener</button>
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'listLength')">➕ Longitud</button>
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'functionDef')">➕ Función</button>
+                            <button style='padding:30px' onclick="addBlockToContainer([${currentPath.join(',')}], 'functionCall')">➕ Llamar función</button>
+                        </div>
+                    `;
+                    div.innerHTML = `
+                        ${headerHtml}
+                        <div class="${bodyClass}">
+                            <div class="nested-list" data-list-path="${currentPath.join(',')}"></div>
+                            ${addButtonsHtml}
+                        </div>
+                    `;
+                    const nestedList = div.querySelector('.nested-list');
+                    nestedList.ondragover = handleDragOverList;
+                    nestedList.ondrop = handleDropOnList;
+                    renderBlockList(nestedList, block.children || [], currentPath);
+                } else if (block.type === 'ask') {
+                    div.innerHTML = `
+                        <div class="ask-header">
+                            <span class="block-label">❓ preguntar</span>
+                            <span>y guardar en</span>
+                            <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable" 
+                                   onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                            <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                            <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                            <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                        </div>
+                    `;
+                } else if (block.type === 'listCreate') {
+                    div.innerHTML = `
+                        <span class="block-label">📋 crear lista</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>=</span>
+                        <input type="text" value="${escapeHtml(block.value)}" placeholder="Expresión JS (ej. [1,2,3])" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'value', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'listAdd') {
+                    div.innerHTML = `
+                        <span class="block-label">➕ añadir a</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable (array)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>el valor</span>
+                        <input type="text" value="${escapeHtml(block.value)}" placeholder="Expresión JS" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'value', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'listGet') {
+                    div.innerHTML = `
+                        <span class="block-label">🔍 obtener</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable (array)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>en índice</span>
+                        <input type="text" value="${escapeHtml(block.index)}" placeholder="Expresión numérica" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'index', this.value)">
+                        <span>guardar en</span>
+                        <input type="text" value="${escapeHtml(block.target || '')}" placeholder="Variable destino (opcional)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'target', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'listLength') {
+                    div.innerHTML = `
+                        <span class="block-label">📏 longitud de</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable (array)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>guardar en</span>
+                        <input type="text" value="${escapeHtml(block.target || '')}" placeholder="Variable destino (opcional)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'target', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'functionCall') {
+                    div.innerHTML = `
+                        <span class="block-label">📞 llamar función</span>
+                        <input type="text" value="${escapeHtml(block.name)}" placeholder="Nombre de función" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'name', this.value)">
+                        <span>con argumentos:</span>
+                        <input type="text" value="${escapeHtml(block.args)}" placeholder="exp1, exp2, ..." 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'args', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                }
+                container.appendChild(div);
+            });
+        }
+
+        // ================== DRAG & DROP ==================
+        function handleDragStart(event) {
+            dragSourcePath = event.currentTarget.dataset.path.split(',').filter(s => s !== '').map(Number);
+            event.dataTransfer.setData('text/plain', event.currentTarget.dataset.path);
+            event.dataTransfer.effectAllowed = 'move';
+            event.currentTarget.style.opacity = '0.5';
+        }
+
+        function handleDragEnd(event) {
+            event.currentTarget.style.opacity = '1';
+            document.querySelectorAll('.drop-zone-highlight').forEach(el => el.classList.remove('drop-zone-highlight'));
+            dragSourcePath = null;
+        }
+
+        function handleDragOverBlock(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.classList.add('drop-zone-highlight');
+        }
+
+        function handleDropOnBlock(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const targetPath = event.currentTarget.dataset.path.split(',').filter(s => s !== '').map(Number);
+            if (dragSourcePath) {
+                moveBlockBefore(dragSourcePath, targetPath);
+            }
+            event.currentTarget.classList.remove('drop-zone-highlight');
+        }
+
+        function handleDragOverList(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.classList.add('drop-zone-highlight');
+        }
+
+        function handleDropOnList(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const listPath = event.currentTarget.dataset.listPath || '';
+            const targetParentPath = listPath === '' ? [] : listPath.split(',').map(Number);
+            if (dragSourcePath) {
+                moveBlockToEnd(dragSourcePath, targetParentPath);
+            }
+            event.currentTarget.classList.remove('drop-zone-highlight');
+        }
+
+        function moveBlockBefore(sourcePath, targetPath) {
+            if (isDescendant(targetPath, sourcePath)) return;
+            const sourceBlock = getBlockByPath(sourcePath);
+            if (!sourceBlock) return;
+            const sourceParentList = getParentList(sourcePath);
+            const sourceIndex = sourcePath[sourcePath.length - 1];
+            sourceParentList.splice(sourceIndex, 1);
+            const targetParentList = getParentList(targetPath);
+            const targetIndex = targetPath[targetPath.length - 1];
+            targetParentList.splice(targetIndex, 0, sourceBlock);
+            renderProgram();
+        }
+
+        function moveBlockToEnd(sourcePath, targetParentPath) {
+            if (isDescendant(targetParentPath, sourcePath)) return;
+            const sourceBlock = getBlockByPath(sourcePath);
+            if (!sourceBlock) return;
+            const sourceParentList = getParentList(sourcePath);
+            const sourceIndex = sourcePath[sourcePath.length - 1];
+            sourceParentList.splice(sourceIndex, 1);
+            let targetListRef;
+            if (targetParentPath.length === 0) {
+                targetListRef = blocks;
+            } else {
+                const parentBlock = getBlockByPath(targetParentPath);
+                targetListRef = parentBlock.children;
+            }
+            targetListRef.push(sourceBlock);
+            renderProgram();
+        }
+
+        function isDescendant(candidatePath, ancestorPath) {
+            if (ancestorPath.length === 0) return false;
+            if (candidatePath.length <= ancestorPath.length) return false;
+            for (let i = 0; i < ancestorPath.length; i++) {
+                if (candidatePath[i] !== ancestorPath[i]) return false;
+            }
+            return true;
+        }
+
+        // ================== EVALUACIÓN DE EXPRESIONES ==================
+        function evalExpression(expr, vars) {
+            try {
+                const keys = Object.keys(vars);
+                const values = Object.values(vars);
+                const func = new Function(...keys, `"use strict"; return (${expr});`);
+                return func(...values);
+            } catch (e) {
+                return expr;
+            }
+        }
+
+        // ================== ENTRADA EN CONSOLA ==================
+        function askInConsole(question, outputDiv) {
+            return new Promise((resolve) => {
+                const line = document.createElement('div');
+                line.className = 'output-input-line';
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = 'Escribe tu respuesta y pulsa Enter';
+                line.appendChild(document.createTextNode(question + ' '));
+                line.appendChild(input);
+                outputDiv.appendChild(line);
+                input.focus();
+
+                input.addEventListener('keydown', function handler(e) {
+                    if (e.key === 'Enter') {
+                        const answer = input.value;
+                        input.disabled = true;
+                        input.style.borderBottom = 'none';
+                        input.removeEventListener('keydown', handler);
+                        resolve(answer);
+                    }
+                });
+            });
+        }
+
+        // ================== RECOPILACIÓN DE FUNCIONES ==================
+        function collectFunctionDefinitions(blockList) {
+            for (const block of blockList) {
+                if (block.type === 'functionDef') {
+                    functions[block.name.trim()] = block;
+                }
+                if (block.children && block.children.length > 0) {
+                    collectFunctionDefinitions(block.children);
+                }
+            }
+        }
+
+        // ================== EJECUCIÓN DE FUNCIONES ==================
+        function parseArguments(argsString, vars) {
+            if (!argsString.trim()) return [];
+            const parts = argsString.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            return parts.map(part => evalExpression(part, vars));
+        }
+
+        async function callFunction(fnDef, args, outputDiv) {
+            if (callDepth >= MAX_CALL_DEPTH) {
+                throw new Error('Máxima profundidad de llamadas a funciones alcanzada');
+            }
+            const paramNames = fnDef.params.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            const savedVars = {};
+            paramNames.forEach(name => {
+                if (variables.hasOwnProperty(name)) {
+                    savedVars[name] = variables[name];
+                }
+            });
+            paramNames.forEach((name, i) => {
+                variables[name] = args[i] !== undefined ? args[i] : null;
+            });
+            callDepth++;
+            try {
+                await executeBlockList(fnDef.children || [], outputDiv);
+            } finally {
+                paramNames.forEach(name => {
+                    if (savedVars.hasOwnProperty(name)) {
+                        variables[name] = savedVars[name];
+                    } else {
+                        delete variables[name];
+                    }
+                });
+                callDepth--;
+            }
+        }
+
+        // ================== EJECUCIÓN PRINCIPAL ==================
+        async function runProgram() {
+            if (isRunning) return;
+            isRunning = true;
+            variables = {};
+            functions = {};
+            callDepth = 0;
+            // Limpiar intervalos previos
+            activeIntervals.forEach(id => clearInterval(id));
+            activeIntervals = [];
+            const outputDiv = document.getElementById('outputArea');
+            outputDiv.innerHTML = '';
+            if (blocks.length === 0) {
+                outputDiv.innerHTML = '<div class="output-msg">No hay bloques para ejecutar.</div>';
+                isRunning = false;
+                return;
+            }
+            collectFunctionDefinitions(blocks);
+            try {
+                await executeBlockList(blocks, outputDiv);
+            } catch (e) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'output-msg';
+                errorDiv.textContent = `⚠️ Error: ${e.message}`;
+                outputDiv.appendChild(errorDiv);
+                console.error('Error:', e);
+            }
+            isRunning = false;
+        }
+
+        async function executeBlockList(blockList, outputDiv) {
+            for (const block of blockList) {
+                try {
+                    if (block.type === 'assign') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable vacío');
+                        const value = evalExpression(block.value, variables);
+                        variables[varName] = value;
+                    } else if (block.type === 'say') {
+                        const message = evalExpression(block.text, variables);
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = 'output-msg';
+                        msgDiv.textContent = String(message);
+                        outputDiv.appendChild(msgDiv);
+                        console.log(message);
+                    } else if (block.type === 'ask') {
+                        const question = evalExpression(block.question, variables);
+                        const answer = await askInConsole(String(question), outputDiv);
+                        const varName = block.varName.trim();
+                        if (varName) {
+                            variables[varName] = answer;
+                        } else {
+                            throw new Error('Nombre de variable vacío para preguntar');
+                        }
+                    } else if (block.type === 'repeat') {
+                        const times = evalExpression(block.times, variables);
+                        const num = Number(times);
+                        if (isNaN(num)) throw new Error('Número de repeticiones no válido');
+                        if (num > 10000) throw new Error('Demasiadas repeticiones (máx. 10000)');
+                        for (let i = 0; i < num; i++) {
+                            await executeBlockList(block.children || [], outputDiv);
+                        }
+                    } else if (block.type === 'while') {
+                        const maxIterations = 10000;
+                        let iterations = 0;
+                        while (evalExpression(block.condition, variables) && iterations < maxIterations) {
+                            await executeBlockList(block.children || [], outputDiv);
+                            iterations++;
+                        }
+                        if (iterations >= maxIterations) {
+                            throw new Error('Bucle mientras superó el máximo de iteraciones (10000)');
+                        }
+                    } else if (block.type === 'if') {
+                        const condition = evalExpression(block.condition, variables);
+                        if (condition) {
+                            await executeBlockList(block.children || [], outputDiv);
+                        }
+                    } else if (block.type === 'forever') {
+                        // Iniciar setInterval para ejecutar el contenido a 60 FPS
+                        let isForeverRunning = false;
+                        const intervalId = setInterval(async () => {
+                            if (!isForeverRunning) {
+                                isForeverRunning = true;
+                                try {
+                                    await executeBlockList(block.children || [], outputDiv);
+                                } catch (err) {
+                                    const errorDiv = document.createElement('div');
+                                    errorDiv.className = 'output-msg';
+                                    errorDiv.textContent = `⚠️ Error: ${err.message}`;
+                                    outputDiv.appendChild(errorDiv);
+                                    console.error('Error:', err);
+                                } finally {
+                                    isForeverRunning = false;
+                                }
+                            }
+                        }, 1000 / 60);
+                        activeIntervals.push(intervalId);
+                    } else if (block.type === 'listCreate') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable vacío para lista');
+                        const value = evalExpression(block.value, variables);
+                        if (!Array.isArray(value)) {
+                            throw new Error(`El valor para "${varName}" no es un array. Usa [1,2,3] para crear una lista.`);
+                        }
+                        variables[varName] = value;
+                    } else if (block.type === 'listAdd') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable de lista vacío');
+                        const arr = variables[varName];
+                        if (!Array.isArray(arr)) {
+                            throw new Error(`La variable "${varName}" no es un array.`);
+                        }
+                        const value = evalExpression(block.value, variables);
+                        arr.push(value);
+                    } else if (block.type === 'listGet') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable de lista vacío');
+                        const arr = variables[varName];
+                        if (!Array.isArray(arr)) {
+                            throw new Error(`La variable "${varName}" no es un array.`);
+                        }
+                        const index = Number(evalExpression(block.index, variables));
+                        if (isNaN(index) || index < 0 || index >= arr.length) {
+                            throw new Error(`Índice ${index} fuera de rango para "${varName}" (longitud ${arr.length}).`);
+                        }
+                        const element = arr[index];
+                        const target = block.target ? block.target.trim() : '';
+                        if (target) {
+                            variables[target] = element;
+                        } else {
+                            const msgDiv = document.createElement('div');
+                            msgDiv.className = 'output-msg';
+                            msgDiv.textContent = String(element);
+                            outputDiv.appendChild(msgDiv);
+                            console.log(element);
+                        }
+                    } else if (block.type === 'listLength') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable de lista vacío');
+                        const arr = variables[varName];
+                        if (!Array.isArray(arr)) {
+                            throw new Error(`La variable "${varName}" no es un array.`);
+                        }
+                        const length = arr.length;
+                        const target = block.target ? block.target.trim() : '';
+                        if (target) {
+                            variables[target] = length;
+                        } else {
+                            const msgDiv = document.createElement('div');
+                            msgDiv.className = 'output-msg';
+                            msgDiv.textContent = String(length);
+                            outputDiv.appendChild(msgDiv);
+                            console.log(length);
+                        }
+                    } else if (block.type === 'functionDef') {
+                        continue;
+                    } else if (block.type === 'functionCall') {
+                        const fnName = block.name.trim();
+                        if (!fnName) throw new Error('Nombre de función vacío');
+                        const fnDef = functions[fnName];
+                        if (!fnDef) throw new Error(`La función "${fnName}" no está definida`);
+                        const args = parseArguments(block.args, variables);
+                        await callFunction(fnDef, args, outputDiv);
+                    }
+                } catch (err) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'output-msg';
+                    errorDiv.textContent = `⚠️ Error: ${err.message}`;
+                    outputDiv.appendChild(errorDiv);
+                    console.error('Error:', err);
+                }
+            }
+        }
+
+        function clearOutput() {
+            document.getElementById('outputArea').innerHTML = '';
+            console.clear();
+        }
+
+        // ================== GUARDAR Y CARGAR ==================
+        function saveProgram() {
+            const data = JSON.stringify(blocks, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'programa_scratch.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadProgram(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (Array.isArray(data) && validateBlocks(data)) {
+                        blocks = data;
+                        renderProgram();
+                        clearOutput();
+                        alert('Programa cargado correctamente.');
+                    } else {
+                        alert('Formato de archivo no válido. Debe ser un array de bloques con estructura válida.');
+                    }
+                } catch (err) {
+                    alert('Error al leer el archivo: ' + err.message);
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function validateBlocks(blockList) {
+            if (!Array.isArray(blockList)) return false;
+            return blockList.every(b => {
+                if (b.type === 'say') {
+                    return typeof b.text === 'string';
+                } else if (b.type === 'assign') {
+                    return typeof b.varName === 'string' && typeof b.value === 'string';
+                } else if (b.type === 'repeat') {
+                    return typeof b.times === 'string' && validateBlocks(b.children);
+                } else if (b.type === 'while') {
+                    return typeof b.condition === 'string' && validateBlocks(b.children);
+                } else if (b.type === 'if') {
+                    return typeof b.condition === 'string' && validateBlocks(b.children);
+                } else if (b.type === 'forever') {
+                    return validateBlocks(b.children || []);
+                } else if (b.type === 'ask') {
+                    return typeof b.question === 'string' && typeof b.varName === 'string';
+                } else if (b.type === 'listCreate') {
+                    return typeof b.varName === 'string' && typeof b.value === 'string';
+                } else if (b.type === 'listAdd') {
+                    return typeof b.varName === 'string' && typeof b.value === 'string';
+                } else if (b.type === 'listGet') {
+                    return typeof b.varName === 'string' && typeof b.index === 'string' && (typeof b.target === 'string' || b.target === undefined);
+                } else if (b.type === 'listLength') {
+                    return typeof b.varName === 'string' && (typeof b.target === 'string' || b.target === undefined);
+                } else if (b.type === 'functionDef') {
+                    return typeof b.name === 'string' && typeof b.params === 'string' && validateBlocks(b.children);
+                } else if (b.type === 'functionCall') {
+                    return typeof b.name === 'string' && typeof b.args === 'string';
+                }
+                return false;
+            });
+        }
+
+        // ================== INICIALIZACIÓN ==================
+        addBlockToParent('assign', []);
+        const askBlock = createBlock('ask');
+        askBlock.question = "''";
+        askBlock.varName = 'nombre';
+        blocks.push(askBlock);
+
+        const sayHello = createBlock('say');
+        sayHello.text = "'¡Hola ' + nombre + '!'";
+        blocks.push(sayHello);
+
+        const functionDef = createBlock('functionDef');
+        functionDef.name = 'saludar';
+        functionDef.params = 'nombre';
+        const sayInsideFunc = createBlock('say');
+        sayInsideFunc.text = "'Hola ' + nombre + ' desde la función'";
+        functionDef.children.push(sayInsideFunc);
+        blocks.push(functionDef);
+
+        const functionCall = createBlock('functionCall');
+        functionCall.name = 'saludar';
+        functionCall.args = "'Mundo'";
+        blocks.push(functionCall);
+
+        const listCreate = createBlock('listCreate');
+        listCreate.varName = 'numeros';
+        listCreate.value = '[1, 2, 3]';
+        blocks.push(listCreate);
+
+        const listAdd = createBlock('listAdd');
+        listAdd.varName = 'numeros';
+        listAdd.value = '4';
+        blocks.push(listAdd);
+
+        const listLength = createBlock('listLength');
+        listLength.varName = 'numeros';
+        listLength.target = 'longitud';
+        blocks.push(listLength);
+
+        const sayLength = createBlock('say');
+        sayLength.text = "'La lista tiene ' + longitud + ' elementos'";
+        blocks.push(sayLength);
+
+        const whileBlock = createBlock('while');
+        whileBlock.condition = 'contador < 3';
+        const incBlock = createBlock('assign');
+        incBlock.varName = 'contador';
+        incBlock.value = 'contador + 1';
+        whileBlock.children.push(incBlock);
+        whileBlock.children.push(createBlock('say'));
+        whileBlock.children[1].text = "'contador es ' + contador";
+        blocks.push(whileBlock);
+
+        const ifBlock = createBlock('if');
+        ifBlock.condition = 'contador === 3';
+        const sayInsideIf = createBlock('say');
+        sayInsideIf.text = "'El contador llegó a 3!'";
+        ifBlock.children.push(sayInsideIf);
+        blocks.push(ifBlock);
+
+        renderProgram();
+    </script>
+</body>
+</html>
