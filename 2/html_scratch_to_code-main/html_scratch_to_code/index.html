@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch-like Console con Conversor a Lenguajes</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Barra de herramientas -->
+        <div id="toolbar">
+            <div class="main-buttons">
+                <button id="greenFlag" title="Ejecutar programa" onclick="runProgram()">🏳️</button>
+                <button class="palette-btn" id="btnSay" onclick="addBlockToParent('say', [])">➕ Decir</button>
+                <button class="palette-btn" id="btnAssign" onclick="addBlockToParent('assign', [])">➕ Asignar</button>
+                <button class="palette-btn" id="btnRepeat" onclick="addBlockToParent('repeat', [])">➕ Repetir</button>
+                <button class="palette-btn" id="btnWhile" onclick="addBlockToParent('while', [])">➕ Mientras</button>
+                <button class="palette-btn" id="btnIf" onclick="addBlockToParent('if', [])">➕ Si</button>
+                <button class="palette-btn" id="btnAsk" onclick="addBlockToParent('ask', [])">➕ Preguntar</button>
+                <button class="palette-btn" id="btnListCreate" onclick="addBlockToParent('listCreate', [])">➕ Crear lista</button>
+                <button class="palette-btn" id="btnListAdd" onclick="addBlockToParent('listAdd', [])">➕ Añadir a lista</button>
+                <button class="palette-btn" id="btnListGet" onclick="addBlockToParent('listGet', [])">➕ Obtener de lista</button>
+                <button class="palette-btn" id="btnListLength" onclick="addBlockToParent('listLength', [])">➕ Longitud de lista</button>
+                <button class="palette-btn" id="btnFunctionDef" onclick="addBlockToParent('functionDef', [])">➕ Función</button>
+                <button class="palette-btn" id="btnFunctionCall" onclick="addBlockToParent('functionCall', [])">➕ Llamar función</button>
+                <button class="palette-btn" id="btnForever" onclick="addBlockToParent('forever', [])">➕ Siempre</button>
+                <button class="palette-btn" id="btnReturn" onclick="addBlockToParent('return', [])">➕ Retornar</button>
+                <button class="palette-btn" id="btnSave" onclick="saveProgram()">💾 Guardar</button>
+                <button class="palette-btn" id="btnLoad" onclick="document.getElementById('loadFileInput').click()">📂 Cargar</button>
+                <input type="file" id="loadFileInput" accept=".json" style="display:none" onchange="loadProgram(event)">
+            </div>
+            <div class="right-buttons">
+                <button class="palette-btn" id="btnLimpiarScratch" onclick="clearScratch()">🗑️ Limpiar Scratch</button>
+                <button class="palette-btn" id="btnLimpiarConsola" onclick="clearOutput()">🧹 Limpiar consola</button>
+                <button class="palette-btn" id="btnCargarEjemplo" onclick="cargarEjemplo()">📂 Cargar ejemplo</button>
+                <button class="palette-btn" id="btnLimpiarCodigo" onclick="limpiarCodigo()">🧹 Limpiar código</button>
+            </div>
+        </div>
+
+        <!-- Redimensionador izquierdo (borde externo) -->
+        <div id="left-resizer" class="external-resizer"></div>
+
+        <!-- Columna 1: Programación (bloques) -->
+        <div id="programArea">
+            <div id="programList"></div>
+            <p class="empty-hint" id="emptyHint" style="display:none;">No hay bloques. Añade algunos desde la paleta o arrastra aquí.</p>
+        </div>
+
+        <!-- Divisor entre programArea y outputArea -->
+        <div class="resizer" id="resizer1"></div>
+
+        <!-- Columna 2: Consola de salida -->
+        <div id="outputArea">
+            <div class="output-msg">Consola lista. Pulsa la bandera verde para ejecutar.</div>
+        </div>
+
+        <!-- Divisor entre outputArea y converterArea -->
+        <div class="resizer" id="resizer2"></div>
+
+        <!-- Columna 3: Conversor de lenguajes -->
+        <div id="converterArea">
+            <h3>Conversor Scratch ↔ Lenguaje</h3>
+            <div class="tabs">
+                <button class="tab-btn active" data-lang="bash">Bash</button>
+                <button class="tab-btn" data-lang="batch">Batch</button>
+                <button class="tab-btn" data-lang="c">C</button>
+                <button class="tab-btn" data-lang="cpp">C++</button>
+                <button class="tab-btn" data-lang="webjs">webJS</button>
+                <button class="tab-btn" data-lang="nodejs">NodeJS</button>
+                <button class="tab-btn" data-lang="python">Python</button>
+            </div>
+            <label style="display:block; margin:5px 0;">
+                <input type="checkbox" id="chkHashbang" checked onchange="actualizarHashbang()"> Incluir hashbang
+            </label>
+            <!-- Nota dinámica de compilación -->
+            <p id="compileHint" class="compile-hint">Compila con: <code>bash ejemplo.sh</code></p>
+            <textarea id="codeArea" placeholder="Aquí aparecerá el código generado o escribe código para convertir a Scratch..."></textarea>
+            <div class="converter-buttons">
+                <button class="convert-btn" onclick="convertScratchToCode()">Scratch ➜ Lenguaje</button>
+                <button class="convert-btn" onclick="convertCodeToScratch()">Lenguaje ➜ Scratch</button>
+            </div>
+        </div>
+
+        <!-- Redimensionador derecho (borde externo) -->
+        <div id="right-resizer" class="external-resizer"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

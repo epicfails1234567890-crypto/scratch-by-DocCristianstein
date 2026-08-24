@@ -1,0 +1,554 @@
+/* ====== Estilos base ====== */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    padding: 0;
+    height: 100vh;
+    margin: 0;
+}
+
+/* ====== Aplicación principal ====== */
+#app {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    min-width: 600px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 6px var(--col1) 6px var(--col2) 6px var(--col3) 6px;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+        "toolbar toolbar toolbar toolbar toolbar toolbar toolbar"
+        "left-resizer programArea resizer1 outputArea resizer2 converterArea right-resizer";
+    --col1: 1fr;
+    --col2: 1fr;
+    --col3: 1fr;
+    height: 100vh;
+    transition: width 0.1s;
+}
+
+/* ====== Toolbar ====== */
+#toolbar {
+    grid-area: toolbar;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    gap: 10px;
+    padding: 10px 15px;
+    background: #fafafa;
+    border-bottom: 1px solid #ddd;
+}
+
+.main-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.right-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 6px;
+    justify-content: end;
+    align-content: start;
+}
+
+.palette-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    color: white;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+    transition: all 0.1s;
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+.palette-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+}
+
+#greenFlag {
+    background: #59C059;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 0 #2e7d32;
+    transition: all 0.1s;
+    color: white;
+    user-select: none;
+}
+
+#greenFlag:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 #2e7d32;
+}
+
+/* Colores de botones */
+#btnSay { background: #9966FF; }
+#btnAssign { background: #FF8C1A; }
+#btnRepeat { background: #00C8C8; }
+#btnWhile { background: #FF6680; }
+#btnIf { background: #FFBF00; }
+#btnAsk { background: #A93FA9; }
+#btnListCreate, #btnListAdd, #btnListGet, #btnListLength { background: #E08E00; }
+#btnFunctionDef, #btnFunctionCall { background: #3E9BC2; }
+#btnForever { background: #D94F70; }
+#btnReturn { background: #8E44AD; }
+#btnSave { background: #4C97FF; }
+#btnLoad { background: #FFBF00; }
+
+/* Colores botones derecha */
+#btnLimpiarScratch { background: #c0392b; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+#btnLimpiarConsola { background: #2980b9; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+#btnCargarEjemplo { background: #27ae60; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+#btnLimpiarCodigo { background: #8e44ad; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+
+#btnLimpiarScratch:hover { background: #a93226; }
+#btnLimpiarConsola:hover { background: #1f618d; }
+#btnCargarEjemplo:hover { background: #1e8449; }
+#btnLimpiarCodigo:hover { background: #7d3c98; }
+
+/* ====== Áreas principales ====== */
+#programArea {
+    grid-area: programArea;
+    padding: 10px;
+    background: #fff;
+    overflow: auto;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+}
+
+#outputArea {
+    grid-area: outputArea;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    overflow-y: auto;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+}
+
+#converterArea {
+    grid-area: converterArea;
+    background: #f0f0f0;
+    padding: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+}
+
+#converterArea h3 {
+    margin-bottom: 8px;
+    font-size: 16px;
+    color: #333;
+    text-align: center;
+}
+
+/* ====== Redimensionadores (internos y externos) ====== */
+.resizer, .external-resizer {
+    width: 6px;
+    background: #ddd;
+    cursor: col-resize;
+    user-select: none;
+    transition: background 0.2s;
+}
+
+.resizer:hover,
+.resizer.active,
+.external-resizer:hover,
+.external-resizer.active {
+    background: #4C97FF;
+}
+
+#left-resizer { grid-area: left-resizer; }
+#right-resizer { grid-area: right-resizer; }
+
+/* ====== Pestañas ====== */
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.tab-btn {
+    padding: 5px 10px;
+    background: #e0e0e0;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 12px;
+    transition: background 0.2s;
+}
+
+.tab-btn.active {
+    background: #4C97FF;
+    color: white;
+}
+
+.tab-btn:hover:not(.active) {
+    background: #d0d0d0;
+}
+
+/* ====== Checkbox hashbang y nota de compilación ====== */
+label[for="chkHashbang"] {
+    display: block;
+    margin: 5px 0;
+    font-size: 13px;
+    color: #333;
+}
+
+.compile-hint {
+    font-size: 12px;
+    color: #555;
+    margin: 5px 0;
+    font-style: italic;
+}
+
+.compile-hint code {
+    background: #e8e8e8;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #c7254e;
+}
+
+/* ====== Área de código ====== */
+#codeArea {
+    width: 100%;
+    height: 250px;
+    border: 2px solid #999;
+    border-radius: 6px;
+    padding: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    resize: vertical;
+    margin-bottom: 8px;
+    background: #ffffff;
+    color: #333;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* ====== Botones del conversor ====== */
+.converter-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.convert-btn {
+    padding: 6px 10px;
+    background: #FF8C1A;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 13px;
+    box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+    transition: all 0.1s;
+}
+
+.convert-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 0 0 rgba(0,0,0,0.2);
+}
+
+/* ====== Bloques ====== */
+.block {
+    position: relative;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 5px;
+    background: #4C97FF;
+    color: #ffffff;
+    padding: 5px 8px;
+    padding-right: 90px;
+    border-radius: 10px;
+    margin-bottom: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: grab;
+    transition: opacity 0.2s;
+}
+
+.block:active { cursor: grabbing; }
+
+/* Botones de acción (siempre a la derecha) */
+.block-actions {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: flex;
+    gap: 4px;
+    z-index: 10;
+}
+
+/* Colores de bloques */
+.block-assign { background: #FF8C1A; color: #ffffff; }
+.block-repeat { background: #00C8C8; color: #1a1a1a; }
+.block-while { background: #FF6680; color: #ffffff; }
+.block-if { background: #FFBF00; color: #1a1a1a; }
+.block-forever { background: #D94F70; color: #ffffff; }
+.block-ask { background: #A93FA9; color: #ffffff; }
+.block-list { background: #E08E00; color: #ffffff; }
+.block-function { background: #3E9BC2; color: #ffffff; }
+.block-return { background: #8E44AD; color: #ffffff; }
+
+/* Bloques contenedores */
+.block-repeat,
+.block-while,
+.block-if,
+.block-forever,
+.block-function {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 8px;
+    padding-right: 90px;
+}
+
+/* Cabeceras de bloques contenedores */
+.block-repeat .repeat-header,
+.block-while .while-header,
+.block-if .if-header,
+.block-forever .forever-header,
+.block-function .function-header,
+.block-ask .ask-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-right: 90px;
+}
+
+/* Cuerpos de bloques contenedores */
+.block-repeat .repeat-body,
+.block-while .while-body,
+.block-if .if-body,
+.block-forever .forever-body,
+.block-function .function-body {
+    background: rgba(255,255,255,0.15);
+    border-radius: 6px;
+    padding: 5px;
+    margin-top: 4px;
+    min-height: 30px;
+}
+
+/* Listas anidadas */
+.block-repeat .repeat-body .nested-list,
+.block-while .while-body .nested-list,
+.block-if .if-body .nested-list,
+.block-forever .forever-body .nested-list,
+.block-function .function-body .nested-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.block-label { font-weight: bold; margin-right: 3px; }
+
+/* Inputs dentro de bloques */
+.block input[type="text"] {
+    border: none;
+    border-radius: 15px;
+    padding: 4px 8px;
+    font-size: 12px;
+    width: auto;
+    flex: 1;
+    min-width: 60px;
+    outline: none;
+    background: rgba(255,255,255,0.9);
+    color: #333;
+    font-weight: normal;
+}
+
+/* Botones internos */
+.block button {
+    background: rgba(255,255,255,0.3);
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    color: inherit;
+    font-weight: bold;
+    font-size: 12px;
+    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.block button:hover { background: rgba(255,255,255,0.5); }
+
+.block-repeat button,
+.block-if button,
+.block-list button,
+.block-function button {
+    color: #1a1a1a;
+}
+
+.block-repeat button:hover,
+.block-if button:hover,
+.block-list button:hover,
+.block-function button:hover {
+    background: rgba(0,0,0,0.2);
+}
+
+.block-repeat .repeat-body button,
+.block-while .while-body button,
+.block-if .if-body button,
+.block-forever .forever-body button,
+.block-function .function-body button {
+    background: rgba(255,255,255,0.4);
+}
+
+.block-repeat .repeat-body button:hover,
+.block-while .while-body button:hover,
+.block-if .if-body button:hover,
+.block-forever .forever-body button:hover,
+.block-function .function-body button:hover {
+    background: rgba(255,255,255,0.6);
+}
+
+/* Botones para añadir dentro de contenedores */
+.block-repeat .add-inside,
+.block-while .add-inside,
+.block-if .add-inside,
+.block-forever .add-inside,
+.block-function .add-inside {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.block .add-inside button {
+    width: auto;
+    height: auto;
+    border-radius: 12px;
+    padding: 3px 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.25);
+    border: none;
+    font-size: 12px;
+    font-weight: bold;
+    color: inherit;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin: 1px;
+    flex: 0 0 auto;
+}
+
+.block .add-inside button:hover {
+    background: rgba(255,255,255,0.45);
+}
+
+/* ====== Consola ====== */
+.output-msg {
+    margin: 3px 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.output-msg::before {
+    content: "> ";
+    color: #6a9955;
+}
+
+.output-input-line {
+    display: flex;
+    align-items: center;
+    margin: 3px 0;
+}
+
+.output-input-line::before {
+    content: "> ";
+    color: #6a9955;
+}
+
+.output-input-line input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed #999;
+    color: white;
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+    flex: 1;
+    margin-left: 0;
+}
+
+.empty-hint { color: #666; font-style: italic; }
+.drop-zone-highlight { outline: 2px dashed #4CAF50; outline-offset: 2px; }
+
+/* ====== Responsive ====== */
+@media (max-width: 1000px) {
+    #app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr 1fr 1fr;
+        grid-template-areas:
+            "toolbar"
+            "programArea"
+            "outputArea"
+            "converterArea";
+        height: auto;
+    }
+
+    .resizer, .external-resizer {
+        display: none;
+    }
+
+    body {
+        height: auto;
+        padding: 10px;
+    }
+
+    #outputArea, #converterArea {
+        border-left: none;
+        border-top: 1px solid #ddd;
+    }
+
+    #toolbar {
+        grid-template-columns: 1fr;
+    }
+
+    .right-buttons {
+        grid-template-columns: repeat(2, auto);
+        justify-content: end;
+    }
+}
