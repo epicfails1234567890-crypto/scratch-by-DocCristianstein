@@ -10,4 +10,4 @@ teclaRecienPresionada(32) → true solo en el instante en que se comienza a pres
 
 teclaRecienSoltada(32) → true solo en el instante en que se suelta la tecla Espacio.
 
-Por ejemplo escogimos 32, q es el codigo de la tecla del espacio.
+Por ejemplo escogimos 32, q es el codigo de la tecla del espacio. Esos 3 eventos retornarán lo q les convenga...
