@@ -1,6 +1,6 @@
 # scratch-by-DocCristianstein
 
-IMPORTANTE!:
+⚠️¡¡¡IMPORTANTE!!!⚠️:
 
 Introduzca estos valores en las condicionales para q la tecla por su código pueda ser registrada como presionada, soltada o agarrada:
 
