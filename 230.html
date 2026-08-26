@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkutrón. Tu apache, de minecrap.</title>
+    <!-- Three.js desde CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <style>
+        :root {
+            --scratch-blue: #4C97FF;
+            --scratch-green: #59C059;
+            --scratch-orange: #FF8C1A;
+            --scratch-yellow: #FFBF00;
+            --scratch-purple: #9966FF;
+            --scratch-red: #FF6680;
+            --scratch-cyan: #00C8C8;
+            --scratch-ask: #CF63CF;
+            --scratch-list: #FFA500;
+            --scratch-function: #5CB1D6;
+            --scratch-forever: #D94F70;
+            --scratch-return: #8E44AD;
+            --block-radius: 12px;
+            --shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        #app {
+            width: 900px;
+            max-width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        #toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 20px;
+            background: #fafafa;
+            border-bottom: 1px solid #ddd;
+            flex-wrap: wrap;
+        }
+        #greenFlag {
+            background: var(--scratch-green);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 #2e7d32;
+            transition: all 0.1s;
+            color: white;
+            user-select: none;
+        }
+        #greenFlag:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #2e7d32;
+        }
+        .palette-btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+            transition: all 0.1s;
+        }
+        .palette-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.2);
+        }
+        #btnSay { background: var(--scratch-purple); }
+        #btnAssign { background: var(--scratch-orange); }
+        #btnRepeat { background: var(--scratch-cyan); }
+        #btnWhile { background: var(--scratch-red); }
+        #btnIf { background: var(--scratch-yellow); }
+        #btnAsk { background: var(--scratch-ask); }
+        #btnListCreate { background: var(--scratch-list); }
+        #btnListAdd { background: var(--scratch-list); }
+        #btnListGet { background: var(--scratch-list); }
+        #btnListLength { background: var(--scratch-list); }
+        #btnListRemove { background: var(--scratch-list); }
+        #btnListSet { background: var(--scratch-list); }
+        #btnFunctionDef { background: var(--scratch-function); }
+        #btnFunctionCall { background: var(--scratch-function); }
+        #btnForever { background: var(--scratch-forever); }
+        #btnReturn { background: var(--scratch-return); }
+        /* Nuevos botones para canvas */
+        #btnCanvasClear { background: #8e44ad; }
+        #btnDrawIMG { background: #e67e22; }
+        #btnClear { background: #999; margin-left: auto; }
+        #btnClearProgram { background: #e74c3c; }
+        #btnSave { background: var(--scratch-blue); }
+        #btnLoad { background: var(--scratch-yellow); }
+        #programArea {
+            padding: 20px;
+            background: #fff;
+            min-height: 200px;
+        }
+        .block {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--scratch-blue);
+            color: white;
+            padding: 10px 15px;
+            border-radius: var(--block-radius);
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+            font-size: 16px;
+            flex-wrap: wrap;
+            cursor: grab;
+            transition: opacity 0.2s;
+        }
+        .block:active { cursor: grabbing; }
+        .block-assign { background: var(--scratch-orange); }
+        .block-repeat { background: var(--scratch-cyan); flex-direction: column; align-items: stretch; padding: 10px; }
+        .block-while { background: var(--scratch-red); flex-direction: column; align-items: stretch; padding: 10px; }
+        .block-if { background: var(--scratch-yellow); flex-direction: column; align-items: stretch; padding: 10px; }
+        .block-forever { background: var(--scratch-forever); flex-direction: column; align-items: stretch; padding: 10px; }
+        .block-ask { background: var(--scratch-ask); }
+        .block-list { background: var(--scratch-list); }
+        .block-function { background: var(--scratch-function); flex-direction: column; align-items: stretch; padding: 10px; }
+        .block-return { background: var(--scratch-return); }
+        /* Nuevos tipos de bloque */
+        .block-canvasClear { background: #8e44ad; }
+        .block-drawIMG { background: #e67e22; }
+        .block-repeat .repeat-header,
+        .block-while .while-header,
+        .block-if .if-header,
+        .block-forever .forever-header,
+        .block-function .function-header,
+        .block-ask .ask-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            cursor: grab;
+        }
+        .block-repeat .repeat-body,
+        .block-while .while-body,
+        .block-if .if-body,
+        .block-forever .forever-body,
+        .block-function .function-body {
+            background: rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 5px;
+            min-height: 40px;
+        }
+        .block-repeat .repeat-body .nested-list,
+        .block-while .while-body .nested-list,
+        .block-if .if-body .nested-list,
+        .block-forever .forever-body .nested-list,
+        .block-function .function-body .nested-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .block-repeat .repeat-body .block,
+        .block-while .while-body .block,
+        .block-if .if-body .block,
+        .block-forever .forever-body .block,
+        .block-function .function-body .block {
+            margin-bottom: 0;
+        }
+        .block-label { font-weight: bold; margin-right: 5px; }
+        .block input[type="text"] {
+            border: none;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 15px;
+            width: auto;
+            min-width: 150px;
+            outline: none;
+        }
+        .block button {
+            background: rgba(255,255,255,0.3);
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .block button:hover { background: rgba(255,255,255,0.5); }
+        .block-repeat .repeat-body button,
+        .block-while .while-body button,
+        .block-if .if-body button,
+        .block-forever .forever-body button,
+        .block-function .function-body button { background: rgba(255,255,255,0.4); }
+        .block-repeat .repeat-body button:hover,
+        .block-while .while-body button:hover,
+        .block-if .if-body button:hover,
+        .block-forever .forever-body button:hover,
+        .block-function .function-body button:hover { background: rgba(255,255,255,0.6); }
+        .block-repeat .add-inside,
+        .block-while .add-inside,
+        .block-if .add-inside,
+        .block-forever .add-inside,
+        .block-function .add-inside { display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
+        #outputArea {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            min-height: 150px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-y: auto;
+            max-height: 250px;
+        }
+        /* Canvas 3D */
+        #canvas3dContainer {
+            width: 100%;
+            height: 400px;
+            background: #000;
+            position: relative;
+        }
+        #canvas3dContainer canvas {
+            display: block;
+        }
+        .output-msg {
+            margin: 3px 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .output-msg::before {
+            content: "> ";
+            color: #6a9955;
+        }
+        .output-input-line {
+            display: flex;
+            align-items: center;
+            margin: 3px 0;
+        }
+        .output-input-line::before {
+            content: "> ";
+            color: #6a9955;
+        }
+        .output-input-line input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px dashed #999;
+            color: white;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+            flex: 1;
+            margin-left: 0;
+        }
+        .empty-hint { color: #666; font-style: italic; }
+        .drop-zone-highlight { outline: 2px dashed #4CAF50; outline-offset: 2px; }
+        #saveFileNameInput {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 15px;
+            font-size: 14px;
+            outline: none;
+            width: 200px;
+            background: white;
+            color: #333;
+            transition: border 0.2s;
+        }
+        #saveFileNameInput:focus {
+            border-color: var(--scratch-blue);
+        }
+        @media (max-width: 600px) {
+            .block input[type="text"] { width: 100%; min-width: auto; }
+            .block { flex-direction: column; align-items: stretch; }
+            .block button { align-self: flex-end; }
+            #saveFileNameInput { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" style="width:100%">
+        <div id="toolbar">
+            <button id="greenFlag" title="Ejecutar programa" onclick="runProgram()">🏳️</button>
+            <button class="palette-btn" id="btnSay" onclick="addBlockToParent('say', [])">➕ Decir</button>
+            <button class="palette-btn" id="btnAssign" onclick="addBlockToParent('assign', [])">➕ Asignar</button>
+            <button class="palette-btn" id="btnRepeat" onclick="addBlockToParent('repeat', [])">➕ Repetir</button>
+            <button class="palette-btn" id="btnWhile" onclick="addBlockToParent('while', [])">➕ Mientras</button>
+            <button class="palette-btn" id="btnIf" onclick="addBlockToParent('if', [])">➕ Si</button>
+            <button class="palette-btn" id="btnAsk" onclick="addBlockToParent('ask', [])">➕ Preguntar</button>
+            <button class="palette-btn" id="btnListCreate" onclick="addBlockToParent('listCreate', [])">➕ Crear lista</button>
+            <button class="palette-btn" id="btnListAdd" onclick="addBlockToParent('listAdd', [])">➕ Añadir a lista</button>
+            <button class="palette-btn" id="btnListGet" onclick="addBlockToParent('listGet', [])">➕ Obtener de lista</button>
+            <button class="palette-btn" id="btnListLength" onclick="addBlockToParent('listLength', [])">➕ Longitud de lista</button>
+            <button class="palette-btn" id="btnListRemove" onclick="addBlockToParent('listRemove', [])">➕ Eliminar de lista</button>
+            <button class="palette-btn" id="btnListSet" onclick="addBlockToParent('listSet', [])">➕ Modificar lista</button>
+            <button class="palette-btn" id="btnFunctionDef" onclick="addBlockToParent('functionDef', [])">➕ Función</button>
+            <button class="palette-btn" id="btnFunctionCall" onclick="addBlockToParent('functionCall', [])">➕ Llamar función</button>
+            <button class="palette-btn" id="btnForever" onclick="addBlockToParent('forever', [])">➕ Siempre</button>
+            <button class="palette-btn" id="btnReturn" onclick="addBlockToParent('return', [])">➕ Retornar</button>
+            <!-- Nuevos botones para canvas -->
+            <button class="palette-btn" id="btnCanvasClear" onclick="addBlockToParent('canvasClear', [])">➕ Limpiar canvas</button>
+            <button class="palette-btn" id="btnDrawIMG" onclick="addBlockToParent('drawIMG', [])">➕ Dibujar imagen</button>
+            <input type="text" id="saveFileNameInput" value="programa_scratch.json" placeholder="Nombre del archivo" title="Nombre con el que se guardará el archivo">
+            <button class="palette-btn" id="btnSave" onclick="saveProgram()">💾 Guardar</button>
+            <button class="palette-btn" id="btnLoad" onclick="document.getElementById('loadFileInput').click()">📂 Cargar</button>
+            <input type="file" id="loadFileInput" accept=".json" style="display:none" onchange="loadProgram(event)">
+            <button class="palette-btn" id="btnClearProgram" onclick="clearProgram()">🗑️ Vaciar Scratch</button>
+            <button class="palette-btn" id="btnClear" onclick="clearOutput()">🧹 Limpiar consola</button>
+        </div>
+
+        <div id="programArea">
+            <div id="programList"></div>
+            <p class="empty-hint" id="emptyHint" style="display:none;">No hay bloques. Añade algunos desde la paleta o arrastra aquí.</p>
+        </div>
+
+        <div id="outputArea">
+            <div class="output-msg">Consola lista. Pulsa la bandera verde para ejecutar.</div>
+        </div>
+
+        <!-- Contenedor del canvas 3D -->
+        <div id="canvas3dContainer"></div>
+    </div>
+
+    <script>
+        // ================== ESTADO ==================
+        let blocks = [];
+        let variables = {};
+        let functions = {};
+        let dragSourcePath = null;
+        let isRunning = false;
+        let callDepth = 0;
+        const MAX_CALL_DEPTH = 50;
+        let activeIntervals = [];
+
+        // ================== CACHÉS PARA RENDERIZADO 3D ==================
+        let textureCache = {};   // URL -> { texture, loading, error }
+        let geometryCache = {};  // "w,h" -> PlaneGeometry
+        let materialCache = {};  // URL -> MeshBasicMaterial
+
+        // ================== TECLADO ==================
+        const keysPressed = new Set();
+        const keysJustPressed = new Set();
+        const keysJustReleased = new Set();
+
+        function normalizeKeyRepresentations(keyInput) {
+            if (typeof keyInput === 'number') {
+                return [keyInput, String(keyInput)];
+            } else if (typeof keyInput === 'string') {
+                const trimmed = keyInput.trim();
+                if (/^\d+$/.test(trimmed)) {
+                    const num = Number(trimmed);
+                    return [num, trimmed];
+                }
+                return [trimmed, trimmed.toLowerCase()];
+            }
+            return [keyInput];
+        }
+
+        function addKeyRepresentations(set, event) {
+            if (event.key !== undefined) {
+                set.add(event.key);
+                set.add(event.key.toLowerCase());
+            }
+            if (event.code !== undefined) {
+                set.add(event.code);
+                set.add(event.code.toLowerCase());
+            }
+            if (event.keyCode !== undefined) {
+                set.add(event.keyCode);
+                set.add(String(event.keyCode));
+            }
+        }
+
+        function isKeyInSet(set, keyInput) {
+            const reps = normalizeKeyRepresentations(keyInput);
+            return reps.some(rep => set.has(rep));
+        }
+
+        function teclaPresionada(keyInput) {
+            return isKeyInSet(keysPressed, keyInput);
+        }
+
+        function teclaRecienPresionada(keyInput) {
+            const reps = normalizeKeyRepresentations(keyInput);
+            for (const rep of reps) {
+                if (keysJustPressed.has(rep)) {
+                    keysJustPressed.delete(rep);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function teclaRecienSoltada(keyInput) {
+            const reps = normalizeKeyRepresentations(keyInput);
+            for (const rep of reps) {
+                if (keysJustReleased.has(rep)) {
+                    keysJustReleased.delete(rep);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        const teclado = {
+            presionada: teclaPresionada,
+            recienPresionada: teclaRecienPresionada,
+            recienSoltada: teclaRecienSoltada
+        };
+
+        window.addEventListener('keydown', (e) => {
+            const wasPressed = keysPressed.has(e.keyCode) || keysPressed.has(e.code) || keysPressed.has(e.key);
+            addKeyRepresentations(keysPressed, e);
+            if (!wasPressed) {
+                addKeyRepresentations(keysJustPressed, e);
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key !== undefined) {
+                keysPressed.delete(e.key);
+                keysPressed.delete(e.key.toLowerCase());
+            }
+            if (e.code !== undefined) {
+                keysPressed.delete(e.code);
+                keysPressed.delete(e.code.toLowerCase());
+            }
+            if (e.keyCode !== undefined) {
+                keysPressed.delete(e.keyCode);
+                keysPressed.delete(String(e.keyCode));
+            }
+            addKeyRepresentations(keysJustReleased, e);
+        });
+
+        // ================== EXCEPCIÓN DE RETORNO ==================
+        class ReturnSignal extends Error {
+            constructor(value) {
+                super('return');
+                this.returnValue = value;
+            }
+        }
+
+        // ================== FUNCIONES AUXILIARES ==================
+        function getBlockByPath(path) {
+            let current = blocks;
+            for (let i = 0; i < path.length; i++) {
+                if (i === path.length - 1) {
+                    return current[path[i]];
+                } else {
+                    if (!current[path[i]] || !current[path[i]].children) return null;
+                    current = current[path[i]].children;
+                }
+            }
+            return null;
+        }
+
+        function getParentList(path) {
+            if (path.length === 0) return blocks;
+            let parent = blocks;
+            for (let i = 0; i < path.length - 1; i++) {
+                parent = parent[path[i]].children;
+            }
+            return parent;
+        }
+
+        function updateBlockByPath(path, key, value) {
+            const block = getBlockByPath(path);
+            if (block) {
+                block[key] = value;
+            }
+        }
+
+        function deleteBlockByPath(path) {
+            if (path.length === 0) return;
+            const parentList = getParentList(path);
+            const index = path[path.length - 1];
+            parentList.splice(index, 1);
+            renderProgram();
+        }
+
+        function moveBlockByPath(path, direction) {
+            if (path.length === 0) return;
+            const parentList = getParentList(path);
+            const index = path[path.length - 1];
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= parentList.length) return;
+            [parentList[index], parentList[newIndex]] = [parentList[newIndex], parentList[index]];
+            renderProgram();
+        }
+
+        function addBlockToParent(type, parentPath) {
+            const newBlock = createBlock(type);
+            const parentList = getParentList(parentPath);
+            parentList.push(newBlock);
+            renderProgram();
+        }
+
+        function addBlockToContainer(containerPath, type) {
+            const containerBlock = getBlockByPath(containerPath);
+            if (containerBlock && ['repeat', 'while', 'if', 'functionDef', 'forever'].includes(containerBlock.type)) {
+                const newBlock = createBlock(type);
+                containerBlock.children.push(newBlock);
+                renderProgram();
+            }
+        }
+
+        function createBlock(type) {
+            if (type === 'say') {
+                return { type: 'say', text: '"hola mundo"' };
+            } else if (type === 'assign') {
+                return { type: 'assign', varName: 'veces', value: '1' };
+            } else if (type === 'repeat') {
+                return { type: 'repeat', times: '10', children: [] };
+            } else if (type === 'while') {
+                return { type: 'while', condition: 'veces < 3', children: [] };
+            } else if (type === 'if') {
+                return { type: 'if', condition: 'veces === 1', children: [] };
+            } else if (type === 'forever') {
+                return { type: 'forever', children: [] };
+            } else if (type === 'ask') {
+                return { type: 'ask', question: '""', varName: 'nombre' };
+            } else if (type === 'listCreate') {
+                return { type: 'listCreate', varName: 'miLista', value: '[1, 2, 3]' };
+            } else if (type === 'listAdd') {
+                return { type: 'listAdd', varName: 'miLista', value: '4' };
+            } else if (type === 'listGet') {
+                return { type: 'listGet', varName: 'miLista', index: '0', target: 'elemento' };
+            } else if (type === 'listLength') {
+                return { type: 'listLength', varName: 'miLista', target: 'longitud' };
+            } else if (type === 'listRemove') {
+                return { type: 'listRemove', varName: 'miLista', index: '0', target: '' };
+            } else if (type === 'listSet') {
+                return { type: 'listSet', varName: 'miLista', index: '0', value: '42' };
+            } else if (type === 'functionDef') {
+                return { type: 'functionDef', name: 'miFuncion', params: 'a, b', children: [] };
+            } else if (type === 'functionCall') {
+                return { type: 'functionCall', name: 'miFuncion', args: '1, 2', target: '' };
+            } else if (type === 'return') {
+                return { type: 'return', value: '""' };
+            } else if (type === 'canvasClear') {
+                return { type: 'canvasClear' };
+            } else if (type === 'drawIMG') {
+                return { type: 'drawIMG', src: 'https://example.com/image.jpg', x: '0', y: '0', z: '0', w: '1', h: '1' };
+            }
+            return null;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ================== RENDERIZADO ==================
+        function renderProgram() {
+            const list = document.getElementById('programList');
+            const emptyHint = document.getElementById('emptyHint');
+            list.innerHTML = '';
+
+            list.dataset.listPath = '';
+            list.ondragover = handleDragOverList;
+            list.ondrop = handleDropOnList;
+            list.classList.remove('drop-zone-highlight');
+
+            if (blocks.length === 0) {
+                emptyHint.style.display = 'block';
+                return;
+            } else {
+                emptyHint.style.display = 'none';
+            }
+
+            renderBlockList(list, blocks, []);
+        }
+
+        function renderBlockList(container, blockList, parentPath) {
+            blockList.forEach((block, index) => {
+                const currentPath = parentPath.concat(index);
+                const div = document.createElement('div');
+                let classNames = ['block'];
+                if (block.type === 'assign') classNames.push('block-assign');
+                else if (block.type === 'repeat') classNames.push('block-repeat');
+                else if (block.type === 'while') classNames.push('block-while');
+                else if (block.type === 'if') classNames.push('block-if');
+                else if (block.type === 'forever') classNames.push('block-forever');
+                else if (block.type === 'ask') classNames.push('block-ask');
+                else if (['listCreate','listAdd','listGet','listLength','listRemove','listSet'].includes(block.type)) classNames.push('block-list');
+                else if (block.type === 'functionDef') classNames.push('block-function');
+                else if (block.type === 'functionCall') classNames.push('block-function');
+                else if (block.type === 'return') classNames.push('block-return');
+                else if (block.type === 'canvasClear') classNames.push('block-canvasClear');
+                else if (block.type === 'drawIMG') classNames.push('block-drawIMG');
+                div.className = classNames.join(' ');
+                div.draggable = true;
+                div.dataset.path = currentPath.join(',');
+                div.addEventListener('dragstart', handleDragStart);
+                div.addEventListener('dragover', handleDragOverBlock);
+                div.addEventListener('drop', handleDropOnBlock);
+                div.addEventListener('dragend', handleDragEnd);
+
+                if (block.type === 'say') {
+                    div.innerHTML = `
+                        <span class="block-label">💬 decir</span>
+                        <input type="text" value="${escapeHtml(block.text)}" placeholder="Expresión JS" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'text', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'assign') {
+                    div.innerHTML = `
+                        <span class="block-label">📦 asignar</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>=</span>
+                        <input type="text" value="${escapeHtml(block.value)}" placeholder="Expresión JS" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'value', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'repeat' || block.type === 'while' || block.type === 'if' || block.type === 'forever' || block.type === 'functionDef') {
+                    let headerHtml = '';
+                    let bodyClass = '';
+                    let addButtonsHtml = '';
+                    const typeName = block.type;
+                    if (typeName === 'repeat') {
+                        headerHtml = `
+                            <div class="repeat-header">
+                                <span class="block-label">🔁 repetir</span>
+                                <input type="text" value="${escapeHtml(block.times)}" placeholder="Número o expresión" 
+                                       onchange="updateBlockByPath([${currentPath.join(',')}], 'times', this.value)">
+                                <span>veces</span>
+                                <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                                <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                                <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                            </div>
+                        `;
+                        bodyClass = 'repeat-body';
+                    } else if (typeName === 'while') {
+                        headerHtml = `
+                            <div class="while-header">
+                                <span class="block-label">🔁 mientras</span>
+                                <input type="text" value="${escapeHtml(block.condition)}" placeholder="Condición JS" 
+                                       onchange="updateBlockByPath([${currentPath.join(',')}], 'condition', this.value)">
+                                <span>hacer</span>
+                                <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                                <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                                <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                            </div>
+                        `;
+                        bodyClass = 'while-body';
+                    } else if (typeName === 'if') {
+                        headerHtml = `
+                            <div class="if-header">
+                                <span class="block-label">🔀 si</span>
+                                <input type="text" value="${escapeHtml(block.condition)}" placeholder="Condición JS" 
+                                       onchange="updateBlockByPath([${currentPath.join(',')}], 'condition', this.value)">
+                                <span>entonces</span>
+                                <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                                <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                                <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                            </div>
+                        `;
+                        bodyClass = 'if-body';
+                    } else if (typeName === 'forever') {
+                        headerHtml = `
+                            <div class="forever-header">
+                                <span class="block-label">🔁 siempre</span>
+                                <span>repetir a 60 FPS</span>
+                                <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                                <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                                <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                            </div>
+                        `;
+                        bodyClass = 'forever-body';
+                    } else if (typeName === 'functionDef') {
+                        headerHtml = `
+                            <div class="function-header">
+                                <span class="block-label">🔧 función</span>
+                                <input type="text" value="${escapeHtml(block.name)}" placeholder="Nombre de función" 
+                                       onchange="updateBlockByPath([${currentPath.join(',')}], 'name', this.value)">
+                                <span>parámetros:</span>
+                                <input type="text" value="${escapeHtml(block.params)}" placeholder="a, b, c" 
+                                       onchange="updateBlockByPath([${currentPath.join(',')}], 'params', this.value)">
+                                <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                                <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                                <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                            </div>
+                        `;
+                        bodyClass = 'function-body';
+                    }
+                    // Botones internos: incluir nuevos bloques canvas
+                    addButtonsHtml = `
+                        <div class="add-inside">
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'say')">➕ Decir</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'assign')">➕ Asignar</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'repeat')">➕ Repetir</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'while')">➕ Mientras</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'if')">➕ Si</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'forever')">➕ Siempre</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'ask')">➕ Preguntar</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'listCreate')">➕ Crear lista</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'listAdd')">➕ Añadir</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'listGet')">➕ Obtener</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'listLength')">➕ Longitud</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'listRemove')">➕ Eliminar</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'listSet')">➕ Modificar</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'functionDef')">➕ Función</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'functionCall')">➕ Llamar función</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'return')">➕ Retornar</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'canvasClear')">➕ Limpiar canvas</button>
+                            <button style="padding:40px" onclick="addBlockToContainer([${currentPath.join(',')}], 'drawIMG')">➕ Dibujar imagen</button>
+                        </div>
+                    `;
+                    div.innerHTML = `
+                        ${headerHtml}
+                        <div class="${bodyClass}">
+                            <div class="nested-list" data-list-path="${currentPath.join(',')}"></div>
+                            ${addButtonsHtml}
+                        </div>
+                    `;
+                    const nestedList = div.querySelector('.nested-list');
+                    nestedList.ondragover = handleDragOverList;
+                    nestedList.ondrop = handleDropOnList;
+                    renderBlockList(nestedList, block.children || [], currentPath);
+                } else if (block.type === 'ask') {
+                    div.innerHTML = `
+                        <div class="ask-header">
+                            <span class="block-label">❓ preguntar</span>
+                            <span>y guardar en</span>
+                            <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable" 
+                                   onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                            <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                            <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                            <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                        </div>
+                    `;
+                } else if (block.type === 'listCreate') {
+                    div.innerHTML = `
+                        <span class="block-label">📋 crear lista</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>=</span>
+                        <input type="text" value="${escapeHtml(block.value)}" placeholder="Expresión JS (ej. [1,2,3])" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'value', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'listAdd') {
+                    div.innerHTML = `
+                        <span class="block-label">➕ añadir a</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable (array)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>el valor</span>
+                        <input type="text" value="${escapeHtml(block.value)}" placeholder="Expresión JS" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'value', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'listGet') {
+                    div.innerHTML = `
+                        <span class="block-label">🔍 obtener</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable (array)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>en índice</span>
+                        <input type="text" value="${escapeHtml(block.index)}" placeholder="Expresión numérica" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'index', this.value)">
+                        <span>guardar en</span>
+                        <input type="text" value="${escapeHtml(block.target || '')}" placeholder="Variable destino (opcional)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'target', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'listLength') {
+                    div.innerHTML = `
+                        <span class="block-label">📏 longitud de</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable (array)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>guardar en</span>
+                        <input type="text" value="${escapeHtml(block.target || '')}" placeholder="Variable destino (opcional)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'target', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'listRemove') {
+                    div.innerHTML = `
+                        <span class="block-label">🗑️ eliminar de</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable (array)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>en índice</span>
+                        <input type="text" value="${escapeHtml(block.index)}" placeholder="Expresión numérica" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'index', this.value)">
+                        <span>guardar en</span>
+                        <input type="text" value="${escapeHtml(block.target || '')}" placeholder="Variable destino (opcional)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'target', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'listSet') {
+                    div.innerHTML = `
+                        <span class="block-label">✏️ modificar lista</span>
+                        <input type="text" value="${escapeHtml(block.varName)}" placeholder="Variable (array)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'varName', this.value)">
+                        <span>en índice</span>
+                        <input type="text" value="${escapeHtml(block.index)}" placeholder="Expresión numérica" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'index', this.value)">
+                        <span>asignar valor</span>
+                        <input type="text" value="${escapeHtml(block.value)}" placeholder="Expresión JS" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'value', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'functionCall') {
+                    div.innerHTML = `
+                        <span class="block-label">📞 llamar función</span>
+                        <input type="text" value="${escapeHtml(block.name)}" placeholder="Nombre de función" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'name', this.value)">
+                        <span>con argumentos:</span>
+                        <input type="text" value="${escapeHtml(block.args)}" placeholder="exp1, exp2, ..." 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'args', this.value)">
+                        <span>guardar en</span>
+                        <input type="text" value="${escapeHtml(block.target || '')}" placeholder="Variable (opcional)" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'target', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'return') {
+                    div.innerHTML = `
+                        <span class="block-label">↩️ retornar</span>
+                        <input type="text" value="${escapeHtml(block.value)}" placeholder="Expresión JS" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'value', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'canvasClear') {
+                    div.innerHTML = `
+                        <span class="block-label">🧹 Limpiar canvas</span>
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                } else if (block.type === 'drawIMG') {
+                    div.innerHTML = `
+                        <span class="block-label">🖼️ Dibujar imagen</span>
+                        <span>src:</span>
+                        <input type="text" value="${escapeHtml(block.src)}" placeholder="URL o expresión" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'src', this.value)">
+                        <span>x:</span>
+                        <input type="text" value="${escapeHtml(block.x)}" placeholder="0" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'x', this.value)">
+                        <span>y:</span>
+                        <input type="text" value="${escapeHtml(block.y)}" placeholder="0" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'y', this.value)">
+                        <span>z:</span>
+                        <input type="text" value="${escapeHtml(block.z)}" placeholder="0" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'z', this.value)">
+                        <span>w:</span>
+                        <input type="text" value="${escapeHtml(block.w)}" placeholder="1" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'w', this.value)">
+                        <span>h:</span>
+                        <input type="text" value="${escapeHtml(block.h)}" placeholder="1" 
+                               onchange="updateBlockByPath([${currentPath.join(',')}], 'h', this.value)">
+                        <button title="Subir" onclick="moveBlockByPath([${currentPath.join(',')}], -1)">↑</button>
+                        <button title="Bajar" onclick="moveBlockByPath([${currentPath.join(',')}], 1)">↓</button>
+                        <button title="Eliminar" onclick="deleteBlockByPath([${currentPath.join(',')}])">✖</button>
+                    `;
+                }
+                container.appendChild(div);
+            });
+        }
+
+        // ================== DRAG & DROP ==================
+        function handleDragStart(event) {
+            dragSourcePath = event.currentTarget.dataset.path.split(',').filter(s => s !== '').map(Number);
+            event.dataTransfer.setData('text/plain', event.currentTarget.dataset.path);
+            event.dataTransfer.effectAllowed = 'move';
+            event.currentTarget.style.opacity = '0.5';
+        }
+
+        function handleDragEnd(event) {
+            event.currentTarget.style.opacity = '1';
+            document.querySelectorAll('.drop-zone-highlight').forEach(el => el.classList.remove('drop-zone-highlight'));
+            dragSourcePath = null;
+        }
+
+        function handleDragOverBlock(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.classList.add('drop-zone-highlight');
+        }
+
+        function handleDropOnBlock(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const targetPath = event.currentTarget.dataset.path.split(',').filter(s => s !== '').map(Number);
+            if (dragSourcePath) {
+                moveBlockBefore(dragSourcePath, targetPath);
+            }
+            event.currentTarget.classList.remove('drop-zone-highlight');
+        }
+
+        function handleDragOverList(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.classList.add('drop-zone-highlight');
+        }
+
+        function handleDropOnList(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const listPath = event.currentTarget.dataset.listPath || '';
+            const targetParentPath = listPath === '' ? [] : listPath.split(',').map(Number);
+            if (dragSourcePath) {
+                moveBlockToEnd(dragSourcePath, targetParentPath);
+            }
+            event.currentTarget.classList.remove('drop-zone-highlight');
+        }
+
+        function moveBlockBefore(sourcePath, targetPath) {
+            if (isDescendant(targetPath, sourcePath)) return;
+            const sourceBlock = getBlockByPath(sourcePath);
+            if (!sourceBlock) return;
+            const sourceParentList = getParentList(sourcePath);
+            const sourceIndex = sourcePath[sourcePath.length - 1];
+            sourceParentList.splice(sourceIndex, 1);
+            const targetParentList = getParentList(targetPath);
+            const targetIndex = targetPath[targetPath.length - 1];
+            targetParentList.splice(targetIndex, 0, sourceBlock);
+            renderProgram();
+        }
+
+        function moveBlockToEnd(sourcePath, targetParentPath) {
+            if (isDescendant(targetParentPath, sourcePath)) return;
+            const sourceBlock = getBlockByPath(sourcePath);
+            if (!sourceBlock) return;
+            const sourceParentList = getParentList(sourcePath);
+            const sourceIndex = sourcePath[sourcePath.length - 1];
+            sourceParentList.splice(sourceIndex, 1);
+            let targetListRef;
+            if (targetParentPath.length === 0) {
+                targetListRef = blocks;
+            } else {
+                const parentBlock = getBlockByPath(targetParentPath);
+                targetListRef = parentBlock.children;
+            }
+            targetListRef.push(sourceBlock);
+            renderProgram();
+        }
+
+        function isDescendant(candidatePath, ancestorPath) {
+            if (ancestorPath.length === 0) return false;
+            if (candidatePath.length <= ancestorPath.length) return false;
+            for (let i = 0; i < ancestorPath.length; i++) {
+                if (candidatePath[i] !== ancestorPath[i]) return false;
+            }
+            return true;
+        }
+
+        // ================== EVALUACIÓN DE EXPRESIONES ==================
+        function evalExpression(expr, vars) {
+            try {
+                const combinedVars = {
+                    ...vars,
+                    teclado,
+                    teclaPresionada,
+                    teclaRecienPresionada,
+                    teclaRecienSoltada
+                };
+                const keys = Object.keys(combinedVars);
+                const values = Object.values(combinedVars);
+                const func = new Function(...keys, `"use strict"; return (${expr});`);
+                return func(...values);
+            } catch (e) {
+                return expr;
+            }
+        }
+
+        // ================== ENTRADA EN CONSOLA ==================
+        function askInConsole(question, outputDiv) {
+            return new Promise((resolve) => {
+                const line = document.createElement('div');
+                line.className = 'output-input-line';
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = 'Escribe tu respuesta y pulsa Enter';
+                line.appendChild(document.createTextNode(question + ' '));
+                line.appendChild(input);
+                outputDiv.appendChild(line);
+                input.focus();
+
+                input.addEventListener('keydown', function handler(e) {
+                    if (e.key === 'Enter') {
+                        const answer = input.value;
+                        input.disabled = true;
+                        input.style.borderBottom = 'none';
+                        input.removeEventListener('keydown', handler);
+                        resolve(answer);
+                    }
+                });
+            });
+        }
+
+        // ================== RECOPILACIÓN DE FUNCIONES ==================
+        function collectFunctionDefinitions(blockList) {
+            for (const block of blockList) {
+                if (block.type === 'functionDef') {
+                    functions[block.name.trim()] = block;
+                }
+                if (block.children && block.children.length > 0) {
+                    collectFunctionDefinitions(block.children);
+                }
+            }
+        }
+
+        // ================== EJECUCIÓN DE FUNCIONES ==================
+        function parseArguments(argsString, vars) {
+            if (!argsString.trim()) return [];
+            const parts = argsString.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            return parts.map(part => evalExpression(part, vars));
+        }
+
+        async function callFunction(fnDef, args, outputDiv) {
+            if (callDepth >= MAX_CALL_DEPTH) {
+                throw new Error('Máxima profundidad de llamadas a funciones alcanzada');
+            }
+            const paramNames = fnDef.params.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            const savedVars = {};
+            paramNames.forEach(name => {
+                if (variables.hasOwnProperty(name)) {
+                    savedVars[name] = variables[name];
+                }
+            });
+            paramNames.forEach((name, i) => {
+                variables[name] = args[i] !== undefined ? args[i] : null;
+            });
+            callDepth++;
+            let returnValue; // undefined por defecto
+            try {
+                try {
+                    await executeBlockList(fnDef.children || [], outputDiv);
+                } catch (e) {
+                    if (e instanceof ReturnSignal) {
+                        returnValue = e.returnValue;
+                    } else {
+                        throw e;
+                    }
+                }
+            } finally {
+                paramNames.forEach(name => {
+                    if (savedVars.hasOwnProperty(name)) {
+                        variables[name] = savedVars[name];
+                    } else {
+                        delete variables[name];
+                    }
+                });
+                callDepth--;
+            }
+            return returnValue;
+        }
+
+        // ================== THREE.JS SETUP ==================
+        let scene, camera, renderer, canvas3dContainer;
+        
+        function initThreeJS() {
+            canvas3dContainer = document.getElementById('canvas3dContainer');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, canvas3dContainer.clientWidth / canvas3dContainer.clientHeight, 0.1, 1000);
+            camera.position.z = 5;
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(canvas3dContainer.clientWidth, canvas3dContainer.clientHeight);
+            renderer.setClearColor(0x000000);
+            canvas3dContainer.appendChild(renderer.domElement);
+            
+            // Añadir luz ambiental para que las texturas sean visibles
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1);
+            scene.add(ambientLight);
+            
+            // Opcional: añadir ejes para orientación
+            // const axesHelper = new THREE.AxesHelper(5);
+            // scene.add(axesHelper);
+            
+            // Animación
+            function animate() {
+                requestAnimationFrame(animate);
+                renderer.render(scene, camera);
+            }
+            animate();
+            
+            // Manejar redimensionamiento
+            window.addEventListener('resize', () => {
+                if (!canvas3dContainer) return;
+                const width = canvas3dContainer.clientWidth;
+                const height = canvas3dContainer.clientHeight;
+                renderer.setSize(width, height);
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+            });
+        }
+        
+        // Función para limpiar la escena (optimizada)
+        function canvasClear() {
+            // Eliminar todas las mallas de la escena de forma segura
+            while(scene.children.length > 0) {
+                const child = scene.children[0];
+                if (child.isMesh) {
+                    // No eliminamos geometrías/materiales compartidos para no romper cachés
+                    child.geometry = undefined;
+                    child.material = undefined;
+                }
+                scene.remove(child);
+            }
+            // Opcional: también podríamos limpiar cachés si se desea un reseteo completo
+            // Pero es mejor conservarlas para reutilizar texturas ya cargadas.
+        }
+        
+        // Función para dibujar una imagen (optimizada con cachés)
+        function drawIMG(src, x, y, z, w, h) {
+            const url = String(src);
+            
+            // Cachear geometría por dimensiones
+            const geoKey = `${w},${h}`;
+            if (!geometryCache[geoKey]) {
+                geometryCache[geoKey] = new THREE.PlaneGeometry(w, h);
+            }
+            const geometry = geometryCache[geoKey];
+
+            // Verificar si ya tenemos la textura cargada
+            if (textureCache[url] && textureCache[url].texture) {
+                // Usar material cacheado
+                if (!materialCache[url]) {
+                    materialCache[url] = new THREE.MeshBasicMaterial({
+                        map: textureCache[url].texture,
+                        side: THREE.DoubleSide
+                    });
+                }
+                const material = materialCache[url];
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(x, y, z);
+                scene.add(mesh);
+            } else if (textureCache[url] && textureCache[url].loading) {
+                // La textura está cargando; esperamos sin crear malla todavía
+                // (opcional: podríamos encolar la creación)
+                console.warn(`Textura ${url} aún cargando, se omitirá este drawIMG.`);
+            } else {
+                // Primera vez: marcar como cargando e iniciar carga
+                textureCache[url] = { loading: true, texture: null, error: false };
+                const textureLoader = new THREE.TextureLoader();
+                textureLoader.load(
+                    url,
+                    (texture) => {
+                        textureCache[url].texture = texture;
+                        textureCache[url].loading = false;
+                        // Crear material y mesh
+                        if (!materialCache[url]) {
+                            materialCache[url] = new THREE.MeshBasicMaterial({
+                                map: texture,
+                                side: THREE.DoubleSide
+                            });
+                        }
+                        const material = materialCache[url];
+                        const mesh = new THREE.Mesh(geometry, material);
+                        mesh.position.set(x, y, z);
+                        scene.add(mesh);
+                    },
+                    undefined,
+                    (err) => {
+                        textureCache[url].error = true;
+                        textureCache[url].loading = false;
+                        console.error('Error al cargar la textura:', err);
+                        const outputDiv = document.getElementById('outputArea');
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'output-msg';
+                        errorDiv.textContent = `⚠️ Error al cargar imagen: ${url}`;
+                        outputDiv.appendChild(errorDiv);
+                    }
+                );
+            }
+        }
+
+        // ================== EJECUCIÓN PRINCIPAL ==================
+        async function runProgram() {
+            if (isRunning) return;
+            isRunning = true;
+            variables = {};
+            functions = {};
+            callDepth = 0;
+            activeIntervals.forEach(id => clearInterval(id));
+            activeIntervals = [];
+            keysJustPressed.clear();
+            keysJustReleased.clear();
+            const outputDiv = document.getElementById('outputArea');
+            outputDiv.innerHTML = '';
+            // No limpiamos la escena automáticamente; solo cuando se ejecute canvasClear
+            if (blocks.length === 0) {
+                outputDiv.innerHTML = '<div class="output-msg">No hay bloques para ejecutar.</div>';
+                isRunning = false;
+                return;
+            }
+            collectFunctionDefinitions(blocks);
+            try {
+                await executeBlockList(blocks, outputDiv);
+            } catch (e) {
+                if (e instanceof ReturnSignal) {
+                    const warnDiv = document.createElement('div');
+                    warnDiv.className = 'output-msg';
+                    warnDiv.textContent = '⚠️ Advertencia: bloque "retornar" usado fuera de una función.';
+                    outputDiv.appendChild(warnDiv);
+                } else {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'output-msg';
+                    errorDiv.textContent = `⚠️ Error: ${e.message}`;
+                    outputDiv.appendChild(errorDiv);
+                    console.error('Error:', e);
+                }
+            }
+            isRunning = false;
+        }
+
+        async function executeBlockList(blockList, outputDiv) {
+            for (const block of blockList) {
+                try {
+                    if (block.type === 'assign') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable vacío');
+                        const value = evalExpression(block.value, variables);
+                        variables[varName] = value;
+                    } else if (block.type === 'say') {
+                        const message = evalExpression(block.text, variables);
+                        const msgDiv = document.createElement('div');
+                        msgDiv.className = 'output-msg';
+                        msgDiv.textContent = String(message);
+                        outputDiv.appendChild(msgDiv);
+                        console.log(message);
+                    } else if (block.type === 'ask') {
+                        const question = evalExpression(block.question, variables);
+                        const answer = await askInConsole(String(question), outputDiv);
+                        const varName = block.varName.trim();
+                        if (varName) {
+                            variables[varName] = answer;
+                        } else {
+                            throw new Error('Nombre de variable vacío para preguntar');
+                        }
+                    } else if (block.type === 'repeat') {
+                        const times = evalExpression(block.times, variables);
+                        const num = Number(times);
+                        if (isNaN(num)) throw new Error('Número de repeticiones no válido');
+                        if (num > 10000) throw new Error('Demasiadas repeticiones (máx. 10000)');
+                        for (let i = 0; i < num; i++) {
+                            await executeBlockList(block.children || [], outputDiv);
+                        }
+                    } else if (block.type === 'while') {
+                        const maxIterations = 10000;
+                        let iterations = 0;
+                        while (evalExpression(block.condition, variables) && iterations < maxIterations) {
+                            await executeBlockList(block.children || [], outputDiv);
+                            iterations++;
+                        }
+                        if (iterations >= maxIterations) {
+                            throw new Error('Bucle mientras superó el máximo de iteraciones (10000)');
+                        }
+                    } else if (block.type === 'if') {
+                        const condition = evalExpression(block.condition, variables);
+                        if (condition) {
+                            await executeBlockList(block.children || [], outputDiv);
+                        }
+                    } else if (block.type === 'forever') {
+                        let isForeverRunning = false;
+                        const intervalId = setInterval(async () => {
+                            if (!isForeverRunning) {
+                                isForeverRunning = true;
+                                try {
+                                    await executeBlockList(block.children || [], outputDiv);
+                                } catch (err) {
+                                    const errorDiv = document.createElement('div');
+                                    errorDiv.className = 'output-msg';
+                                    errorDiv.textContent = `⚠️ Error: ${err.message}`;
+                                    outputDiv.appendChild(errorDiv);
+                                    console.error('Error:', err);
+                                } finally {
+                                    isForeverRunning = false;
+                                }
+                            }
+                        }, 1000 / 60);
+                        activeIntervals.push(intervalId);
+                    } else if (block.type === 'listCreate') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable vacío para lista');
+                        const value = evalExpression(block.value, variables);
+                        if (!Array.isArray(value)) {
+                            throw new Error(`El valor para "${varName}" no es un array. Usa [1,2,3] para crear una lista.`);
+                        }
+                        variables[varName] = value;
+                    } else if (block.type === 'listAdd') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable de lista vacío');
+                        const arr = variables[varName];
+                        if (!Array.isArray(arr)) {
+                            throw new Error(`La variable "${varName}" no es un array.`);
+                        }
+                        const value = evalExpression(block.value, variables);
+                        arr.push(value);
+                    } else if (block.type === 'listGet') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable de lista vacío');
+                        const arr = variables[varName];
+                        if (!Array.isArray(arr)) {
+                            throw new Error(`La variable "${varName}" no es un array.`);
+                        }
+                        const index = Number(evalExpression(block.index, variables));
+                        if (isNaN(index) || index < 0 || index >= arr.length) {
+                            throw new Error(`Índice ${index} fuera de rango para "${varName}" (longitud ${arr.length}).`);
+                        }
+                        const element = arr[index];
+                        const target = block.target ? block.target.trim() : '';
+                        if (target) {
+                            variables[target] = element;
+                        } else {
+                            const msgDiv = document.createElement('div');
+                            msgDiv.className = 'output-msg';
+                            msgDiv.textContent = String(element);
+                            outputDiv.appendChild(msgDiv);
+                            console.log(element);
+                        }
+                    } else if (block.type === 'listLength') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable de lista vacío');
+                        const arr = variables[varName];
+                        if (!Array.isArray(arr)) {
+                            throw new Error(`La variable "${varName}" no es un array.`);
+                        }
+                        const length = arr.length;
+                        const target = block.target ? block.target.trim() : '';
+                        if (target) {
+                            variables[target] = length;
+                        } else {
+                            const msgDiv = document.createElement('div');
+                            msgDiv.className = 'output-msg';
+                            msgDiv.textContent = String(length);
+                            outputDiv.appendChild(msgDiv);
+                            console.log(length);
+                        }
+                    } else if (block.type === 'listRemove') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable de lista vacío');
+                        const arr = variables[varName];
+                        if (!Array.isArray(arr)) {
+                            throw new Error(`La variable "${varName}" no es un array.`);
+                        }
+                        const index = Number(evalExpression(block.index, variables));
+                        if (isNaN(index) || index < 0 || index >= arr.length) {
+                            throw new Error(`Índice ${index} fuera de rango para "${varName}" (longitud ${arr.length}).`);
+                        }
+                        const removedElement = arr.splice(index, 1)[0];
+                        const target = block.target ? block.target.trim() : '';
+                        if (target) {
+                            variables[target] = removedElement;
+                        }
+                    } else if (block.type === 'listSet') {
+                        const varName = block.varName.trim();
+                        if (!varName) throw new Error('Nombre de variable de lista vacío');
+                        const arr = variables[varName];
+                        if (!Array.isArray(arr)) {
+                            throw new Error(`La variable "${varName}" no es un array.`);
+                        }
+                        const index = Number(evalExpression(block.index, variables));
+                        if (isNaN(index) || index < 0 || index >= arr.length) {
+                            throw new Error(`Índice ${index} fuera de rango para "${varName}" (longitud ${arr.length}).`);
+                        }
+                        const newValue = evalExpression(block.value, variables);
+                        arr[index] = newValue;
+                    } else if (block.type === 'functionDef') {
+                        continue;
+                    } else if (block.type === 'functionCall') {
+                        const fnName = block.name.trim();
+                        if (!fnName) throw new Error('Nombre de función vacío');
+                        const fnDef = functions[fnName];
+                        if (!fnDef) throw new Error(`La función "${fnName}" no está definida`);
+                        const args = parseArguments(block.args, variables);
+                        const result = await callFunction(fnDef, args, outputDiv);
+                        if (block.target && block.target.trim()) {
+                            variables[block.target.trim()] = result;
+                        }
+                    } else if (block.type === 'return') {
+                        const value = evalExpression(block.value, variables);
+                        throw new ReturnSignal(value);
+                    } else if (block.type === 'canvasClear') {
+                        canvasClear();
+                    } else if (block.type === 'drawIMG') {
+                        const src = evalExpression(block.src, variables);
+                        const x = Number(evalExpression(block.x, variables));
+                        const y = Number(evalExpression(block.y, variables));
+                        const z = Number(evalExpression(block.z, variables));
+                        const w = Number(evalExpression(block.w, variables));
+                        const h = Number(evalExpression(block.h, variables));
+                        if (isNaN(x) || isNaN(y) || isNaN(z) || isNaN(w) || isNaN(h)) {
+                            throw new Error('Parámetros numéricos inválidos en dibujar imagen');
+                        }
+                        drawIMG(src, x, y, z, w, h);
+                    }
+                } catch (err) {
+                    if (err instanceof ReturnSignal) {
+                        throw err; // propagar hacia la función
+                    }
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'output-msg';
+                    errorDiv.textContent = `⚠️ Error: ${err.message}`;
+                    outputDiv.appendChild(errorDiv);
+                    console.error('Error:', err);
+                }
+            }
+        }
+
+        function clearOutput() {
+            document.getElementById('outputArea').innerHTML = '';
+            console.clear();
+        }
+
+        function clearProgram() {
+            activeIntervals.forEach(id => clearInterval(id));
+            activeIntervals = [];
+            blocks = [];
+            variables = {};
+            functions = {};
+            callDepth = 0;
+            isRunning = false;
+            renderProgram();
+        }
+
+        // ================== GUARDAR Y CARGAR ==================
+        function saveProgram() {
+            let fileName = document.getElementById('saveFileNameInput').value.trim();
+            if (!fileName) {
+                fileName = 'programa_scratch.json';
+            }
+            if (!fileName.toLowerCase().endsWith('.json')) {
+                fileName += '.json';
+            }
+            const data = JSON.stringify(blocks, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadProgram(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (Array.isArray(data) && validateBlocks(data)) {
+                        blocks = data;
+                        renderProgram();
+                        clearOutput();
+                        alert('Programa cargado correctamente.');
+                    } else {
+                        alert('Formato de archivo no válido. Debe ser un array de bloques con estructura válida.');
+                    }
+                } catch (err) {
+                    alert('Error al leer el archivo: ' + err.message);
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function validateBlocks(blockList) {
+            if (!Array.isArray(blockList)) return false;
+            return blockList.every(b => {
+                if (b.type === 'say') {
+                    return typeof b.text === 'string';
+                } else if (b.type === 'assign') {
+                    return typeof b.varName === 'string' && typeof b.value === 'string';
+                } else if (b.type === 'repeat') {
+                    return typeof b.times === 'string' && validateBlocks(b.children);
+                } else if (b.type === 'while') {
+                    return typeof b.condition === 'string' && validateBlocks(b.children);
+                } else if (b.type === 'if') {
+                    return typeof b.condition === 'string' && validateBlocks(b.children);
+                } else if (b.type === 'forever') {
+                    return validateBlocks(b.children || []);
+                } else if (b.type === 'ask') {
+                    return typeof b.question === 'string' && typeof b.varName === 'string';
+                } else if (b.type === 'listCreate') {
+                    return typeof b.varName === 'string' && typeof b.value === 'string';
+                } else if (b.type === 'listAdd') {
+                    return typeof b.varName === 'string' && typeof b.value === 'string';
+                } else if (b.type === 'listGet') {
+                    return typeof b.varName === 'string' && typeof b.index === 'string' && (typeof b.target === 'string' || b.target === undefined);
+                } else if (b.type === 'listLength') {
+                    return typeof b.varName === 'string' && (typeof b.target === 'string' || b.target === undefined);
+                } else if (b.type === 'listRemove') {
+                    return typeof b.varName === 'string' && typeof b.index === 'string' && (typeof b.target === 'string' || b.target === undefined);
+                } else if (b.type === 'listSet') {
+                    return typeof b.varName === 'string' && typeof b.index === 'string' && typeof b.value === 'string';
+                } else if (b.type === 'functionDef') {
+                    return typeof b.name === 'string' && typeof b.params === 'string' && validateBlocks(b.children);
+                } else if (b.type === 'functionCall') {
+                    return typeof b.name === 'string' && typeof b.args === 'string' && (typeof b.target === 'string' || b.target === undefined);
+                } else if (b.type === 'return') {
+                    return typeof b.value === 'string';
+                } else if (b.type === 'canvasClear') {
+                    return true; // no tiene parámetros
+                } else if (b.type === 'drawIMG') {
+                    return typeof b.src === 'string' && typeof b.x === 'string' && typeof b.y === 'string' && typeof b.z === 'string' && typeof b.w === 'string' && typeof b.h === 'string';
+                }
+                return false;
+            });
+        }
+
+        // ================== INICIALIZACIÓN ==================
+        function init() {
+            // Inicializar Three.js
+            initThreeJS();
+            
+            // Añadir bloques de ejemplo
+            addBlockToParent('assign', []);
+            const askBlock = createBlock('ask');
+            askBlock.question = "''";
+            askBlock.varName = 'nombre';
+            blocks.push(askBlock);
+
+            const sayHello = createBlock('say');
+            sayHello.text = "'¡Hola ' + nombre + '!'";
+            blocks.push(sayHello);
+
+            const functionDef = createBlock('functionDef');
+            functionDef.name = 'sumar';
+            functionDef.params = 'a, b';
+            const returnInsideFunc = createBlock('return');
+            returnInsideFunc.value = 'a + b';
+            functionDef.children.push(returnInsideFunc);
+            blocks.push(functionDef);
+
+            const functionCall = createBlock('functionCall');
+            functionCall.name = 'sumar';
+            functionCall.args = '3, 4';
+            functionCall.target = 'resultado';
+            blocks.push(functionCall);
+
+            const sayResult = createBlock('say');
+            sayResult.text = "'El resultado es ' + resultado";
+            blocks.push(sayResult);
+
+            const listCreate = createBlock('listCreate');
+            listCreate.varName = 'numeros';
+            listCreate.value = '[1, 2, 3]';
+            blocks.push(listCreate);
+
+            const listAdd = createBlock('listAdd');
+            listAdd.varName = 'numeros';
+            listAdd.value = '4';
+            blocks.push(listAdd);
+
+            const listLength = createBlock('listLength');
+            listLength.varName = 'numeros';
+            listLength.target = 'longitud';
+            blocks.push(listLength);
+
+            const sayLength = createBlock('say');
+            sayLength.text = "'La lista tiene ' + longitud + ' elementos'";
+            blocks.push(sayLength);
+
+            const listSet = createBlock('listSet');
+            listSet.varName = 'numeros';
+            listSet.index = '0';
+            listSet.value = '100';
+            blocks.push(listSet);
+
+            const sayModified = createBlock('say');
+            sayModified.text = "'Ahora el primer elemento es ' + numeros[0]";
+            blocks.push(sayModified);
+
+            const whileBlock = createBlock('while');
+            whileBlock.condition = 'contador < 3';
+            const incBlock = createBlock('assign');
+            incBlock.varName = 'contador';
+            incBlock.value = 'contador + 1';
+            whileBlock.children.push(incBlock);
+            whileBlock.children.push(createBlock('say'));
+            whileBlock.children[1].text = "'contador es ' + contador";
+            blocks.push(whileBlock);
+
+            const ifBlock = createBlock('if');
+            ifBlock.condition = 'contador === 3';
+            const sayInsideIf = createBlock('say');
+            sayInsideIf.text = "'El contador llegó a 3!'";
+            ifBlock.children.push(sayInsideIf);
+            blocks.push(ifBlock);
+
+            renderProgram();
+        }
+        
+        // Ejecutar inicialización cuando el DOM esté listo
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
