@@ -2,6 +2,8 @@
 
 ⚠️¡¡¡IMPORTANTE!!!⚠️:
 
+Primero y q nada, el sitio donde se aloja la ultima versión del editor es este: https://kalkutron.surge.sh/
+
 Introduzca estos valores en las condicionales para q la tecla por su código pueda ser registrada como presionada, soltada o agarrada:
 
 `teclaPresionada(32)` → true mientras la tecla Espacio está físicamente presionada.
