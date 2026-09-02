@@ -1,0 +1,63 @@
+[
+  {
+    "type": "assign",
+    "varName": "x",
+    "value": "0"
+  },
+  {
+    "type": "assign",
+    "varName": "y",
+    "value": "0"
+  },
+  {
+    "type": "forever",
+    "children": [
+      {
+        "type": "keyCheck",
+        "mode": "presionada",
+        "key": "a",
+        "target": "teclaPulsadaLeft"
+      },
+      {
+        "type": "if",
+        "condition": "teclaPulsadaLeft",
+        "children": [
+          {
+            "type": "assign",
+            "varName": "x",
+            "value": "x-0.1"
+          }
+        ]
+      },
+      {
+        "type": "keyCheck",
+        "mode": "presionada",
+        "key": "d",
+        "target": "teclaPulsadaRight"
+      },
+      {
+        "type": "if",
+        "condition": "teclaPulsadaRight",
+        "children": [
+          {
+            "type": "assign",
+            "varName": "x",
+            "value": "x+0.1"
+          }
+        ]
+      },
+      {
+        "type": "canvasClear"
+      },
+      {
+        "type": "drawIMG",
+        "src": "https://i.ibb.co/7dbXqwmX/stone.webp",
+        "x": "x",
+        "y": "y",
+        "z": "0",
+        "w": "1",
+        "h": "1"
+      }
+    ]
+  }
+]
