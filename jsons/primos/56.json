@@ -1,0 +1,61 @@
+[
+  {
+    "type": "functionDef",
+    "name": "esPrimo",
+    "params": "n",
+    "children": [
+      {
+        "type": "assign",
+        "varName": "esPrimoVar",
+        "value": "true"
+      },
+      {
+        "type": "contar",
+        "varName": "i",
+        "from": "2",
+        "to": "n-1",
+        "children": [
+          {
+            "type": "if",
+            "condition": "n % i == 0",
+            "children": [
+              {
+                "type": "assign",
+                "varName": "esPrimoVar",
+                "value": "false"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "return",
+        "value": "esPrimoVar"
+      }
+    ]
+  },
+  {
+    "type": "contar",
+    "varName": "n",
+    "from": "2",
+    "to": "100",
+    "children": [
+      {
+        "type": "functionCall",
+        "name": "esPrimo",
+        "args": "n",
+        "target": "esPrimoVar"
+      },
+      {
+        "type": "if",
+        "condition": "esPrimoVar==true",
+        "children": [
+          {
+            "type": "say",
+            "text": "n"
+          }
+        ]
+      }
+    ]
+  }
+]

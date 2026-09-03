@@ -1,0 +1,28 @@
+[
+  {
+    "type": "functionDef",
+    "name": "esPrimo",
+    "params": "n",
+    "children": [
+      {
+        "type": "contar",
+        "varName": "i",
+        "from": "2",
+        "to": "1000",
+        "children": [
+          {
+            "type": "if",
+            "condition": "n%i==0",
+            "children": [
+              {
+                "type": "assign",
+                "varName": "veces",
+                "value": "1"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

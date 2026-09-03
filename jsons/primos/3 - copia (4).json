@@ -1,0 +1,8 @@
+[
+  {
+    "type": "functionDef",
+    "name": "esPrimo",
+    "params": "a, b",
+    "children": []
+  }
+]
