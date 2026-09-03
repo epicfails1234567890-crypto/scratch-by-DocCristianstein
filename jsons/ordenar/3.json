@@ -1,0 +1,18 @@
+[
+  {
+    "type": "listCreate",
+    "varName": "miLista",
+    "value": "[]"
+  },
+  {
+    "type": "repeat",
+    "times": "10",
+    "children": [
+      {
+        "type": "listAdd",
+        "varName": "miLista",
+        "value": "Math.floor(Math.random()*10)"
+      }
+    ]
+  }
+]

@@ -1,0 +1,99 @@
+[
+  {
+    "type": "listCreate",
+    "varName": "miLista",
+    "value": "[]"
+  },
+  {
+    "type": "repeat",
+    "times": "10",
+    "children": [
+      {
+        "type": "listAdd",
+        "varName": "miLista",
+        "value": "Math.floor(Math.random()*10)"
+      },
+      {
+        "type": "listLength",
+        "varName": "miLista",
+        "target": "tam"
+      }
+    ]
+  },
+  {
+    "type": "assign",
+    "varName": "aux1",
+    "value": "0"
+  },
+  {
+    "type": "assign",
+    "varName": "aux2",
+    "value": "0"
+  },
+  {
+    "type": "contar",
+    "varName": "i",
+    "from": "1",
+    "to": "tam-1",
+    "children": [
+      {
+        "type": "contar",
+        "varName": "j",
+        "from": "1",
+        "to": "tam-1",
+        "children": [
+          {
+            "type": "listGet",
+            "varName": "miLista",
+            "index": "j",
+            "target": "numero1"
+          },
+          {
+            "type": "listGet",
+            "varName": "miLista",
+            "index": "j+1",
+            "target": "numero2"
+          },
+          {
+            "type": "if",
+            "condition": "j<j+1",
+            "children": [
+              {
+                "type": "assign",
+                "varName": "aux1",
+                "value": "numero1"
+              },
+              {
+                "type": "assign",
+                "varName": "aux2",
+                "value": "numero2"
+              },
+              {
+                "type": "assign",
+                "varName": "numero1",
+                "value": "aux2"
+              },
+              {
+                "type": "assign",
+                "varName": "numero2",
+                "value": "aux1"
+              },
+              {
+                "type": "listSet",
+                "varName": "miLista",
+                "index": "j",
+                "value": "numero1"
+              },
+              {
+                "type": "listSet",
+                "varName": "miLista",
+                "index": "j+1",
+                "value": "numero2"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
