@@ -1,96 +1,116 @@
 [
   {
-    "type": "assign",
-    "varName": "x",
-    "value": "0"
+    "type": "listCreate",
+    "varName": "miLista",
+    "value": "[]"
   },
   {
-    "type": "assign",
-    "varName": "y",
-    "value": "0"
-  },
-  {
-    "type": "forever",
+    "type": "repeat",
+    "times": "10",
     "children": [
       {
-        "type": "keyCheck",
-        "mode": "presionada",
-        "key": "a",
-        "target": "teclaPulsadaLeft"
+        "type": "listAdd",
+        "varName": "miLista",
+        "value": "Math.floor(Math.random()*10)"
       },
       {
-        "type": "if",
-        "condition": "teclaPulsadaLeft",
+        "type": "listLength",
+        "varName": "miLista",
+        "target": "tam"
+      }
+    ]
+  },
+  {
+    "type": "assign",
+    "varName": "aux1",
+    "value": "0"
+  },
+  {
+    "type": "assign",
+    "varName": "aux2",
+    "value": "0"
+  },
+  {
+    "type": "contar",
+    "varName": "i",
+    "from": "0",
+    "to": "tam-2",
+    "children": [
+      {
+        "type": "contar",
+        "varName": "j",
+        "from": "0",
+        "to": "tam-2",
         "children": [
           {
-            "type": "assign",
-            "varName": "x",
-            "value": "x-0.1"
-          }
-        ]
-      },
-      {
-        "type": "keyCheck",
-        "mode": "presionada",
-        "key": "d",
-        "target": "teclaPulsadaRight"
-      },
-      {
-        "type": "if",
-        "condition": "teclaPulsadaRight",
-        "children": [
+            "type": "listGet",
+            "varName": "miLista",
+            "index": "j",
+            "target": "numero1"
+          },
           {
-            "type": "assign",
-            "varName": "x",
-            "value": "x+0.1"
-          }
-        ]
-      },
-      {
-        "type": "keyCheck",
-        "mode": "presionada",
-        "key": "w",
-        "target": "wPush"
-      },
-      {
-        "type": "if",
-        "condition": "wPush",
-        "children": [
+            "type": "listGet",
+            "varName": "miLista",
+            "index": "j+1",
+            "target": "numero2"
+          },
           {
-            "type": "assign",
-            "varName": "y",
-            "value": "y+0.1"
+            "type": "if",
+            "condition": "numero1 > numero2",
+            "children": [
+              {
+                "type": "assign",
+                "varName": "aux1",
+                "value": "numero1"
+              },
+              {
+                "type": "assign",
+                "varName": "aux2",
+                "value": "numero2"
+              },
+              {
+                "type": "assign",
+                "varName": "numero1",
+                "value": "aux2"
+              },
+              {
+                "type": "assign",
+                "varName": "numero2",
+                "value": "aux1"
+              },
+              {
+                "type": "listSet",
+                "varName": "miLista",
+                "index": "j",
+                "value": "numero1"
+              },
+              {
+                "type": "listSet",
+                "varName": "miLista",
+                "index": "j+1",
+                "value": "numero2"
+              }
+            ]
           }
         ]
+      }
+    ]
+  },
+  {
+    "type": "contar",
+    "varName": "i",
+    "from": "0",
+    "to": "9",
+    "children": [
+      {
+        "type": "listGet",
+        "varName": "miLista",
+        "index": "i",
+        "target": "elemento"
       },
       {
-        "type": "keyCheck",
-        "mode": "presionada",
-        "key": "s",
-        "target": "sPush"
-      },
-      {
-        "type": "if",
-        "condition": "sPush",
-        "children": [
-          {
-            "type": "assign",
-            "varName": "y",
-            "value": "y-0.1"
-          }
-        ]
-      },
-      {
-        "type": "canvasClear"
-      },
-      {
-        "type": "drawIMG",
-        "src": "https://i.ibb.co/7dbXqwmX/stone.webp",
-        "x": "x",
-        "y": "y",
-        "z": "0",
-        "w": "1",
-        "h": "1"
+        "type": "say",
+        "text": "elemento"
       }
     ]
   }
